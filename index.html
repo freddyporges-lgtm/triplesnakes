@@ -35,7 +35,7 @@
       max-width: 480px;
       width: 100%;
       margin: 0 auto;
-      padding: 12px;
+      padding: 4px 12px 12px;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -263,7 +263,7 @@
       h1 { font-size: 1.1rem; }
     }
 
-    /* Stadium-style scoreboard (no internal logo) */
+    /* Stadium-style scoreboard */
     .scoreboard {
       position: relative;
       background: radial-gradient(circle at top, #050b12, #020509 70%);
@@ -336,17 +336,13 @@
 
     <!-- Setup -->
     <div class="card" id="setupCard">
-      <h2>Players & Target</h2>
+      <h2>Players</h2>
       <div class="row">
         <div class="flex-1">
           <label for="playerName">Add player</label>
           <input id="playerName" type="text" placeholder="Name" />
         </div>
         <button class="btn btn-sm" id="addPlayerBtn">Add</button>
-      </div>
-      <div class="mt-6">
-        <label for="targetScore">Target score</label>
-        <input id="targetScore" type="number" min="10" value="100" />
       </div>
       <div class="row mt-8">
         <button class="btn" id="startGameBtn">Start game</button>
@@ -355,7 +351,7 @@
       <div class="players-list" id="playersSetupList"></div>
     </div>
 
-    <!-- Stadium-style Scoreboard (no internal logo) -->
+    <!-- Scoreboard -->
     <div class="scoreboard" id="scoreCard" style="display:none;">
       <div class="scoreboard-top">
         <div>
@@ -382,7 +378,7 @@
         Edit a player's score
       </button>
       <div class="muted mt-4">
-        Use this if someone’s score was entered wrong. It will directly change a player’s total.
+        Use this if someone’s score was entered wrong. It directly changes a player's total.
       </div>
     </div>
 
@@ -532,7 +528,7 @@
 
     <!-- Log -->
     <div class="card" id="logCard" style="display:none;">
-      <h2>Events & Drinks</h2>
+      <h2>Game Tracker</h2>
       <div class="log" id="logContainer"></div>
     </div>
   </main>
@@ -655,7 +651,7 @@
       state.round++;
       state.turnsThisRound = 0;
       state.consecutiveZeroTurnsInRound = 0;
-      addLog(`Round ${state.round} started.`, "system");
+      addLog(`All players completed their turns. Starting Round ${state.round}.`, "system");
     }
     renderScoreboard();
   }
@@ -875,7 +871,6 @@
     state.consecutiveZeroTurnsInRound = 0;
     state.turnsThisRound = 0;
     state.lastLeaderId = null;
-    qs("#targetScore").value = 100;
     logContainer.innerHTML = "";
     setupCard.style.display = "block";
     scoreCard.style.display = "none";
@@ -890,8 +885,6 @@
       alert("Add at least 2 players.");
       return;
     }
-    const t = parseInt(qs("#targetScore").value, 10);
-    state.target = isNaN(t) ? 100 : t;
     state.round = 1;
     state.currentIndex = 0;
     state.started = true;
