@@ -251,12 +251,12 @@
       h1 { font-size: 1.1rem; }
     }
 
-    /* Stadium-style scoreboard */
+    /* Stadium-style scoreboard (no logo inside) */
     .scoreboard {
       position: relative;
       background: radial-gradient(circle at top, #050b12, #020509 70%);
       border-radius: 18px;
-      padding: 18px 12px 10px;
+      padding: 14px 12px 10px;
       margin-bottom: 10px;
       box-shadow:
         0 0 0 2px #11161d,
@@ -275,22 +275,6 @@
       text-transform: uppercase;
       letter-spacing: 0.12em;
       color: #b8c4cc;
-    }
-    .scoreboard-logo {
-      position: absolute;
-      left: 50%;
-      top: -26px;
-      transform: translateX(-50%);
-      background: radial-gradient(circle, #0c151c, #020509 70%);
-      border-radius: 999px;
-      padding: 4px;
-      box-shadow: 0 10px 22px rgba(0,0,0,0.6);
-    }
-    .scoreboard-logo img {
-      display: block;
-      width: 60px;
-      height: 60px;
-      object-fit: contain;
     }
     .scoreboard-meta {
       display: flex;
@@ -359,12 +343,8 @@
       <div class="players-list" id="playersSetupList"></div>
     </div>
 
-    <!-- Stadium-style Scoreboard -->
+    <!-- Stadium-style Scoreboard (no internal logo) -->
     <div class="scoreboard" id="scoreCard" style="display:none;">
-      <div class="scoreboard-logo">
-        <img src="Triple Snakes-B3.png" alt="Triple Snakes logo" />
-      </div>
-
       <div class="scoreboard-top">
         <div>
           <div class="scoreboard-title">Triple Snakes Arena</div>
@@ -978,4 +958,3 @@
 </script>
 </body>
 </html>
-
