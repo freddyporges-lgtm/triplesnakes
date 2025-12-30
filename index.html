@@ -137,4 +137,845 @@
       font-size: 0.75rem;
     }
     .pill {
-      display
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .pill-danger {
+      background: rgba(255, 75, 106, 0.12);
+      color: var(--danger);
+    }
+    .pill-warning {
+      background: rgba(255, 209, 102, 0.16);
+      color: var(--warning);
+    }
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: #07171d;
+    }
+    .player-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .score {
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .leader { color: var(--accent); }
+    .current-turn {
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 0 1px rgba(29,214,143,0.28);
+    }
+    .log {
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.78rem;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .log-entry strong {
+      font-weight: 600;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .chip {
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #07171d;
+      color: var(--muted);
+    }
+    .flex-1 { flex: 1; }
+    .mt-4 { margin-top: 4px; }
+    .mt-6 { margin-top: 6px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-10 { margin-top: 10px; }
+    .muted { color: var(--muted); font-size: 0.78rem; }
+    .divider {
+      height: 1px;
+      background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+      margin: 8px 0;
+    }
+    .radio-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .radio-pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      border: 1px solid #21444f;
+      font-size: 0.74rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .radio-pill input {
+      width: auto;
+      margin: 0;
+    }
+    .radio-pill.selected {
+      border-color: var(--accent);
+      background: rgba(29,214,143,0.12);
+      color: var(--accent);
+    }
+    .cols-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 360px) {
+      h1 { font-size: 1.1rem; }
+    }
+
+    /* Stadium-style scoreboard */
+    .scoreboard {
+      position: relative;
+      background: radial-gradient(circle at top, #050b12, #020509 70%);
+      border-radius: 18px;
+      padding: 18px 12px 10px;
+      margin-bottom: 10px;
+      box-shadow:
+        0 0 0 2px #11161d,
+        0 0 0 4px #202733,
+        0 14px 28px rgba(0,0,0,0.65);
+      border: 2px solid #202733;
+    }
+    .scoreboard-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .scoreboard-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #b8c4cc;
+    }
+    .scoreboard-logo {
+      position: absolute;
+      left: 50%;
+      top: -26px;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, #0c151c, #020509 70%);
+      border-radius: 999px;
+      padding: 4px;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.6);
+    }
+    .scoreboard-logo img {
+      display: block;
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+    .scoreboard-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .scoreboard-target-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .scoreboard-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .scoreboard-body {
+      margin-top: 8px;
+    }
+    .scoreboard-players {
+      margin-top: 4px;
+    }
+    .scoreboard .player-row {
+      background: #050c11;
+      border-radius: 10px;
+      padding: 6px 10px;
+    }
+    .scoreboard .current-turn {
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <img src="Triple Snakes-B3.png" alt="Triple Snakes header logo" class="logo-top" />
+  </header>
+
+  <main class="app">
+    <h1>Triple Snakes Scorekeeper</h1>
+    <div class="tagline">
+      Smart scorekeeper for the Triple Snakes dice game.
+    </div>
+
+    <!-- Setup -->
+    <div class="card" id="setupCard">
+      <h2>Players & Target</h2>
+      <div class="row">
+        <div class="flex-1">
+          <label for="playerName">Add player</label>
+          <input id="playerName" type="text" placeholder="Name" />
+        </div>
+        <button class="btn btn-sm" id="addPlayerBtn">Add</button>
+      </div>
+      <div class="mt-6">
+        <label for="targetScore">Target score</label>
+        <input id="targetScore" type="number" min="10" value="100" />
+      </div>
+      <div class="row mt-8">
+        <button class="btn" id="startGameBtn">Start game</button>
+        <button class="btn btn-secondary btn-sm" id="resetGameBtn">Reset</button>
+      </div>
+      <div class="players-list" id="playersSetupList"></div>
+    </div>
+
+    <!-- Stadium-style Scoreboard -->
+    <div class="scoreboard" id="scoreCard" style="display:none;">
+      <div class="scoreboard-logo">
+        <img src="Triple Snakes-B3.png" alt="Triple Snakes logo" />
+      </div>
+
+      <div class="scoreboard-top">
+        <div>
+          <div class="scoreboard-title">Triple Snakes Arena</div>
+          <div class="scoreboard-chips">
+            <span class="chip" id="roundChip">Round 1</span>
+            <span class="chip" id="phaseChip">Normal play</span>
+          </div>
+        </div>
+        <div class="scoreboard-meta">
+          <span>Target</span>
+          <span class="scoreboard-target-value" id="targetScoreLabel">100</span>
+        </div>
+      </div>
+
+      <div class="scoreboard-body">
+        <div class="players-list scoreboard-players" id="playersList"></div>
+      </div>
+    </div>
+
+    <!-- Turn Input -->
+    <div class="card" id="turnCard" style="display:none;">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h2 style="margin-bottom:2px;">Current turn</h2>
+        <span class="pill" id="turnPlayerPill">Player ?</span>
+      </div>
+      <div class="muted">Enter what actually happened this turn. The app will handle scoring, busts, and drinking prompts.</div>
+
+      <div class="mt-8">
+        <label>Outcome type</label>
+        <div class="radio-row" id="outcomeTypeGroup">
+          <label class="radio-pill selected">
+            <input type="radio" name="outcomeType" value="match" checked />
+            Match / normal
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="fourKind" />
+            Four-of-a-kind
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="straight" />
+            Straight attempt
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="snakeEyes" />
+            Snake eyes
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="noScore" />
+            No matches
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="diceOff" />
+            Dice off table
+          </label>
+        </div>
+      </div>
+
+      <!-- Match / Double-Double / Triple Snakes -->
+      <div id="matchFields" class="mt-8">
+        <div class="cols-2">
+          <div>
+            <label>First match face</label>
+            <input id="matchFace1" type="number" min="1" max="6" placeholder="1–6" />
+          </div>
+          <div>
+            <label>Count</label>
+            <input id="matchCount1" type="number" min="2" max="4" placeholder="2–4" />
+          </div>
+          <div>
+            <label>Second match face (optional)</label>
+            <input id="matchFace2" type="number" min="1" max="6" placeholder="1–6" />
+          </div>
+          <div>
+            <label>Count</label>
+            <input id="matchCount2" type="number" min="2" max="4" placeholder="2–4" />
+          </div>
+        </div>
+        <div class="mt-4 muted">
+          Examples: Triple Snakes = face 1, count 3. Double-Double = 2+2 and 4+4 → face1=2,count1=2; face2=4,count2=2.
+        </div>
+      </div>
+
+      <!-- Four of a kind -->
+      <div id="fourKindFields" class="mt-8" style="display:none;">
+        <div class="cols-2">
+          <div>
+            <label>Face (1–6)</label>
+            <input id="fourKindFace" type="number" min="1" max="6" />
+          </div>
+          <div>
+            <label>Use bonus?</label>
+            <select id="fourKindBonus">
+              <option value="best">Pick best automatically</option>
+              <option value="bonus">Force bonus</option>
+              <option value="normal">No bonus</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-4 muted">
+          Bonus table: 1→30, 2→28, 3→27, 4→26, 5→25, 6→24 (or normal sum 4×face).
+        </div>
+      </div>
+
+      <!-- Straight -->
+      <div id="straightFields" class="mt-8" style="display:none;">
+        <label>Straight attempt result</label>
+        <select id="straightResult">
+          <option value="success34">Completed straight, take 34</option>
+          <option value="success35">Completed straight, take 35</option>
+          <option value="fail">Failed (0 points)</option>
+        </select>
+        <div class="mt-4 muted">
+          Only valid if the straight was from the first roll using the green die.
+        </div>
+      </div>
+
+      <!-- Dice off table -->
+      <div id="diceOffFields" class="mt-8" style="display:none;">
+        <div class="cols-2">
+          <div>
+            <label>Dice lost off table</label>
+            <input id="diceLost" type="number" min="1" max="4" />
+          </div>
+          <div>
+            <label>Remaining dice all matched?</label>
+            <select id="diceOffMatched">
+              <option value="no">No (still 0 points)</option>
+              <option value="yes">Yes (enter that match below)</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-4 cols-2">
+          <div>
+            <label>Match face (if yes)</label>
+            <input id="diceOffFace" type="number" min="1" max="6" />
+          </div>
+          <div>
+            <label>Count</label>
+            <input id="diceOffCount" type="number" min="2" max="3" />
+          </div>
+        </div>
+        <div class="mt-4 muted">
+          If all remaining dice match, the turn ends and that match scores; otherwise 0 points.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <div class="flex-1">
+          <label>Override score (optional)</label>
+          <input id="overrideScore" type="number" placeholder="Leave blank to auto-calc" />
+        </div>
+      </div>
+
+      <div class="mt-8 row" style="justify-content:space-between; align-items:center;">
+        <button class="btn" id="submitTurnBtn">Submit turn</button>
+        <button class="btn btn-secondary btn-sm" id="skipTurnBtn">Skip player</button>
+      </div>
+
+      <div class="mt-6 muted" id="turnHint"></div>
+    </div>
+
+    <!-- Log -->
+    <div class="card" id="logCard" style="display:none;">
+      <h2>Events & Drinks</h2>
+      <div class="log" id="logContainer"></div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <img src="Triple Snakes-B5.png" alt="Triple Snakes footer logo" class="logo-bottom" />
+  </footer>
+</div>
+
+<script>
+  const state = {
+    players: [],
+    target: 100,
+    round: 1,
+    currentIndex: 0,
+    started: false,
+    phase: "normal",
+    winnerId: null,
+    consecutiveZeroTurnsInRound: 0,
+    turnsThisRound: 0,
+    lastLeaderId: null
+  };
+
+  const qs = (sel) => document.querySelector(sel);
+
+  const setupCard = qs("#setupCard");
+  const scoreCard = qs("#scoreCard");
+  const turnCard = qs("#turnCard");
+  const logCard = qs("#logCard");
+  const playersSetupList = qs("#playersSetupList");
+  const playersList = qs("#playersList");
+  const roundChip = qs("#roundChip");
+  const phaseChip = qs("#phaseChip");
+  const turnPlayerPill = qs("#turnPlayerPill");
+  const logContainer = qs("#logContainer");
+  const targetScoreLabel = qs("#targetScoreLabel");
+  const turnHint = qs("#turnHint");
+
+  function renderSetupPlayers() {
+    playersSetupList.innerHTML = "";
+    state.players.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "player-row";
+      div.innerHTML = `
+        <div>${p.name}</div>
+        <button class="btn btn-secondary btn-sm" data-remove="${i}">Remove</button>
+      `;
+      playersSetupList.appendChild(div);
+    });
+    playersSetupList.querySelectorAll("[data-remove]").forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.remove, 10);
+        state.players.splice(idx, 1);
+        renderSetupPlayers();
+      };
+    });
+  }
+
+  function getLeaderId() {
+    if (state.players.length === 0) return null;
+    let best = state.players[0];
+    state.players.forEach(p => {
+      if (p.score > best.score) best = p;
+    });
+    const leaders = state.players.filter(p => p.score === best.score);
+    return leaders.length === 1 ? best.id : null;
+  }
+
+  function renderScoreboard() {
+    playersList.innerHTML = "";
+    const leaderId = getLeaderId();
+    state.players.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "player-row" + (i === state.currentIndex ? " current-turn" : "");
+      const scoreClass = "score" + (p.id === leaderId ? " leader" : "");
+      div.innerHTML = `
+        <div class="player-main">
+          <span>${p.name}</span>
+          ${p.id === state.winnerId ? '<span class="pill-warning">Winner</span>' : ""}
+        </div>
+        <div>
+          <span class="${scoreClass}">${p.score}</span>
+        </div>
+      `;
+      playersList.appendChild(div);
+    });
+    roundChip.textContent = `Round ${state.round}`;
+    const phaseText = {
+      normal: "Normal play",
+      rebuttal: "Rebuttal round",
+      winRollOff: "Winner roll-off",
+      lastRollOff: "Last-place roll-off"
+    }[state.phase];
+    phaseChip.textContent = phaseText;
+    const currentPlayer = state.players[state.currentIndex];
+    turnPlayerPill.textContent = currentPlayer ? currentPlayer.name : "Player ?";
+    targetScoreLabel.textContent = state.target;
+  }
+
+  function addLog(msg, type = "info") {
+    const div = document.createElement("div");
+    div.className = "log-entry";
+    let badge = "";
+    if (type === "drink") {
+      badge = ' <span class="pill pill-warning">Drink</span>';
+    } else if (type === "social") {
+      badge = ' <span class="pill pill-danger">Social</span>';
+    } else if (type === "system") {
+      badge = ' <span class="pill">Game</span>';
+    }
+    div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>${badge} – ${msg}`;
+    logContainer.prepend(div);
+  }
+
+  function advanceTurn() {
+    state.currentIndex++;
+    state.turnsThisRound++;
+    if (state.currentIndex >= state.players.length) {
+      state.currentIndex = 0;
+      state.round++;
+      state.turnsThisRound = 0;
+      state.consecutiveZeroTurnsInRound = 0;
+      addLog(`Round ${state.round} started.`, "system");
+    }
+    renderScoreboard();
+  }
+
+  function applyScore(player, delta) {
+    const before = player.score;
+    let after = before + delta;
+    let bust = false;
+    if (after > state.target && state.phase !== "winRollOff" && state.phase !== "lastRollOff") {
+      bust = true;
+      after = 77;
+    }
+    player.score = after;
+    return { before, after, bust };
+  }
+
+  function handleLeaderAndTies(currentPlayer) {
+    if (state.round >= 4 && state.phase === "normal") {
+      const playersAtSame = state.players.filter(p => p.score === currentPlayer.score);
+      if (playersAtSame.length >= 2) {
+        const names = playersAtSame.map(p => p.name).join(" & ");
+        addLog(`${names} are tied at ${currentPlayer.score}. Both drink.`, "drink");
+      }
+
+      const leaderId = getLeaderId();
+      if (leaderId && leaderId !== state.lastLeaderId) {
+        const leader = state.players.find(p => p.id === leaderId);
+        const others = state.players.filter(p => p.id !== leaderId);
+        if (others.length > 0) {
+          addLog(`Leader changed to ${leader.name}. All non-leaders drink.`, "drink");
+        }
+        state.lastLeaderId = leaderId;
+      }
+    }
+  }
+
+  function checkZeroRoundGroupDrink() {
+    if (state.consecutiveZeroTurnsInRound >= state.players.length && state.phase === "normal") {
+      addLog("All players netted 0 this round in consecutive turns. Group must shotgun or take a shot.", "social");
+      state.consecutiveZeroTurnsInRound = 0;
+    }
+  }
+
+  function evaluateWinState(player) {
+    if (state.phase === "normal") {
+      if (player.score === state.target && !state.winnerId) {
+        state.winnerId = player.id;
+        state.phase = "rebuttal";
+        addLog(`${player.name} reached ${state.target}. Rebuttal round begins (others get one more turn).`, "system");
+      }
+    } else if (state.phase === "rebuttal") {
+      const others = state.players.filter(p => p.id !== state.winnerId);
+      const rebuttalDone = state.turnsThisRound >= others.length;
+      if (rebuttalDone) {
+        const winner = state.players.find(p => p.id === state.winnerId);
+        const tiesAt100 = state.players.filter(p => p.score === state.target);
+        if (tiesAt100.length > 1) {
+          state.phase = "winRollOff";
+          addLog(`Multiple players tied at 100 after rebuttal. Winner roll-off begins.`, "system");
+        } else {
+          const minScore = Math.min(...state.players.map(p => p.score));
+          const lastPlace = state.players.filter(p => p.score === minScore);
+          if (lastPlace.length > 1) {
+            state.phase = "lastRollOff";
+            addLog(`Multiple players tied for last at ${minScore}. Last-place roll-off begins.`, "system");
+          } else {
+            addLog(`${winner.name} wins the game. Last-place is ${lastPlace[0].name}.`, "system");
+          }
+        }
+      }
+    } else if (state.phase === "winRollOff") {
+      const tieGroup = state.players.filter(p => p.score === state.target);
+      if (tieGroup.length === 1) {
+        addLog(`${tieGroup[0].name} wins the winner roll-off.`, "system");
+      }
+    } else if (state.phase === "lastRollOff") {
+      const minScore = Math.min(...state.players.map(p => p.score));
+      const last = state.players.filter(p => p.score === minScore);
+      if (last.length === 1) {
+        addLog(`${last[0].name} loses the last-place roll-off.`, "system");
+      }
+    }
+  }
+
+  function computeTurnScore() {
+    const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+    let score = 0;
+    let events = [];
+
+    if (outcomeType === "snakeEyes") {
+      events.push("snakeEyes");
+      return { score: 0, events };
+    }
+
+    if (outcomeType === "noScore") {
+      return { score: 0, events };
+    }
+
+    if (outcomeType === "match") {
+      const f1 = parseInt(qs("#matchFace1").value, 10);
+      const c1 = parseInt(qs("#matchCount1").value, 10);
+      const f2 = parseInt(qs("#matchFace2").value, 10);
+      const c2 = parseInt(qs("#matchCount2").value, 10);
+
+      if (!isNaN(f1) && !isNaN(c1)) {
+        score += f1 * c1;
+        if (f1 === 1 && c1 === 3) events.push("tripleSnakes");
+      }
+      if (!isNaN(f2) && !isNaN(c2)) {
+        score += f2 * c2;
+        if (f2 === 1 && c2 === 3) events.push("tripleSnakes");
+      }
+      return { score: score || 0, events };
+    }
+
+    if (outcomeType === "fourKind") {
+      const face = parseInt(qs("#fourKindFace").value, 10);
+      if (isNaN(face)) return { score: 0, events };
+      const mode = qs("#fourKindBonus").value;
+      const normal = 4 * face;
+      const bonus = face === 1 ? 30 : (30 - face);
+      let chosen = normal;
+      if (mode === "bonus") chosen = bonus;
+      else if (mode === "normal") chosen = normal;
+      else chosen = Math.max(normal, bonus);
+      events.push("fourKind");
+      return { score: chosen, events };
+    }
+
+    if (outcomeType === "straight") {
+      const res = qs("#straightResult").value;
+      if (res === "fail") {
+        return { score: 0, events: ["straightFail"] };
+      } else if (res === "success34") {
+        return { score: 34, events: ["straightSuccess"] };
+      } else {
+        return { score: 35, events: ["straightSuccess"] };
+      }
+    }
+
+    if (outcomeType === "diceOff") {
+      const lost = parseInt(qs("#diceLost").value, 10);
+      const matched = qs("#diceOffMatched").value === "yes";
+      if (isNaN(lost)) return { score: 0, events: ["diceOff"] };
+      events.push("diceOff");
+      if (!matched) {
+        return { score: 0, events };
+      } else {
+        const face = parseInt(qs("#diceOffFace").value, 10);
+        const count = parseInt(qs("#diceOffCount").value, 10);
+        if (isNaN(face) || isNaN(count)) return { score: 0, events };
+        const s = face * count;
+        return { score: s, events };
+      }
+    }
+
+    return { score: 0, events };
+  }
+
+  function updateOutcomeFields() {
+    const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+    const blocks = {
+      match: qs("#matchFields"),
+      fourKind: qs("#fourKindFields"),
+      straight: qs("#straightFields"),
+      snakeEyes: null,
+      noScore: null,
+      diceOff: qs("#diceOffFields")
+    };
+    qs("#matchFields").style.display = "none";
+    qs("#fourKindFields").style.display = "none";
+    qs("#straightFields").style.display = "none";
+    qs("#diceOffFields").style.display = "none";
+    if (blocks[outcomeType]) blocks[outcomeType].style.display = "block";
+
+    const hints = {
+      match: "Use for two/three-of-a-kind, Double-Double, or Triple Snakes.",
+      fourKind: "Use when four-of-a-kind ended the turn (with or without bonus).",
+      straight: "Use only when a first-roll straight and green die were used.",
+      snakeEyes: "Any roll with two 1s ending the turn → 0 points and drink.",
+      noScore: "Turn ended with no scoring combination.",
+      diceOff: "One or more dice went off the table this turn."
+    };
+    turnHint.textContent = hints[outcomeType] || "";
+  }
+
+  qs("#outcomeTypeGroup").addEventListener("change", (e) => {
+    if (e.target.name === "outcomeType") {
+      document.querySelectorAll("#outcomeTypeGroup .radio-pill").forEach(l => {
+        l.classList.remove("selected");
+      });
+      e.target.closest(".radio-pill").classList.add("selected");
+      updateOutcomeFields();
+    }
+  });
+
+  qs("#addPlayerBtn").onclick = () => {
+    const name = qs("#playerName").value.trim();
+    if (!name) return;
+    state.players.push({
+      id: crypto.randomUUID(),
+      name,
+      score: 0
+    });
+    qs("#playerName").value = "";
+    renderSetupPlayers();
+  };
+
+  qs("#resetGameBtn").onclick = () => {
+    state.players = [];
+    state.target = 100;
+    state.round = 1;
+    state.currentIndex = 0;
+    state.started = false;
+    state.phase = "normal";
+    state.winnerId = null;
+    state.consecutiveZeroTurnsInRound = 0;
+    state.turnsThisRound = 0;
+    state.lastLeaderId = null;
+    qs("#targetScore").value = 100;
+    logContainer.innerHTML = "";
+    setupCard.style.display = "block";
+    scoreCard.style.display = "none";
+    turnCard.style.display = "none";
+    logCard.style.display = "none";
+    renderSetupPlayers();
+  };
+
+  qs("#startGameBtn").onclick = () => {
+    if (state.players.length < 2) {
+      alert("Add at least 2 players.");
+      return;
+    }
+    const t = parseInt(qs("#targetScore").value, 10);
+    state.target = isNaN(t) ? 100 : t;
+    state.round = 1;
+    state.currentIndex = 0;
+    state.started = true;
+    state.phase = "normal";
+    state.winnerId = null;
+    state.consecutiveZeroTurnsInRound = 0;
+    state.turnsThisRound = 0;
+    state.lastLeaderId = null;
+    setupCard.style.display = "none";
+    scoreCard.style.display = "block";
+    turnCard.style.display = "block";
+    logCard.style.display = "block";
+    addLog("Game started. First player begins at Round 1.", "system");
+    updateOutcomeFields();
+    renderScoreboard();
+  };
+
+  qs("#skipTurnBtn").onclick = () => {
+    const p = state.players[state.currentIndex];
+    addLog(`${p.name}'s turn skipped.`, "system");
+    advanceTurn();
+  };
+
+  qs("#submitTurnBtn").onclick = () => {
+    const p = state.players[state.currentIndex];
+    const override = qs("#overrideScore").value.trim();
+    let turnScore, events;
+    if (override !== "") {
+      turnScore = parseInt(override, 10) || 0;
+      events = [];
+    } else {
+      const res = computeTurnScore();
+      turnScore = res.score;
+      events = res.events;
+    }
+
+    const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+
+    if (turnScore === 0 && outcomeType !== "skip") {
+      state.consecutiveZeroTurnsInRound++;
+      addLog(`${p.name} scored 0 this turn.`, "drink");
+    } else {
+      state.consecutiveZeroTurnsInRound = 0;
+    }
+    checkZeroRoundGroupDrink();
+
+    const { before, after, bust } = applyScore(p, turnScore);
+
+    let baseMsg = `${p.name} `;
+    if (turnScore === 0) {
+      baseMsg += `scored 0 (remains at ${after}).`;
+    } else {
+      baseMsg += `scored ${turnScore} (from ${before} to ${after}).`;
+    }
+    addLog(baseMsg, "info");
+
+    if (events.includes("tripleSnakes")) {
+      addLog(`${p.name} rolled Triple Snakes (three 1s). Social drink.`, "social");
+    }
+    if (events.includes("fourKind")) {
+      addLog(`${p.name} rolled four-of-a-kind. Social drink.`, "social");
+    }
+    if (events.includes("straightSuccess")) {
+      addLog(`${p.name} completed the straight via green die.`, "info");
+    }
+    if (events.includes("straightFail")) {
+      addLog(`${p.name} failed to complete the straight and scored 0.`, "drink");
+    }
+    if (events.includes("snakeEyes")) {
+      addLog(`${p.name} rolled snake eyes and ends the turn with 0.`, "drink");
+    }
+    if (events.includes("diceOff")) {
+      const lost = parseInt(qs("#diceLost").value, 10) || 1;
+      addLog(`${p.name} rolled ${lost} die/dice off the table. Drinks ${lost}.`, "drink");
+    }
+
+    if (bust && (state.phase === "normal" || state.phase === "rebuttal")) {
+      addLog(`${p.name} busted over ${state.target} and resets to 77. Drinks.`, "drink");
+    }
+
+    handleLeaderAndTies(p);
+    evaluateWinState(p);
+
+    qs("#overrideScore").value = "";
+    advanceTurn();
+  };
+</script>
+</body>
+</html>
+
