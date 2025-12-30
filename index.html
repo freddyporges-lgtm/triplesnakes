@@ -41,27 +41,39 @@
       flex-direction: column;
     }
 
-    /* Header and footer logos */
-    .app-header,
-    .app-footer {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 6px 0;
-    }
-    .logo-top,
-    .logo-bottom {
-      max-width: 360px;
-      width: 80%;
-      height: auto;
-      display: block;
-    }
-    @media (max-width: 480px) {
-      .logo-top,
-      .logo-bottom {
-        max-width: 150px;
-      }
-    }
+/* Header and footer logos */
+.app-header,
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 0;
+}
+
+/* Header logo ~2x bigger */
+.logo-top {
+  max-width: 360px;
+  width: 80%;
+  height: auto;
+  display: block;
+}
+
+/* Footer logo stays smaller */
+.logo-bottom {
+  max-width: 180px;
+  width: 60%;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 480px) {
+  .logo-top {
+    max-width: 300px;
+  }
+  .logo-bottom {
+    max-width: 150px;
+  }
+}
 
     h1 {
       font-size: 1.2rem;
