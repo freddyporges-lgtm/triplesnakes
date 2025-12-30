@@ -206,6 +206,9 @@
     .log-entry strong {
       font-weight: 600;
     }
+    .log-entry.system-message {
+      color: #39ff14; /* neon green for system messages */
+    }
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -638,6 +641,7 @@
       badge = ' <span class="pill pill-danger">Social</span>';
     } else if (type === "system") {
       badge = ' <span class="pill">Game</span>';
+      div.classList.add("system-message");
     }
     div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>${badge} – ${msg}`;
     logContainer.prepend(div);
@@ -673,7 +677,7 @@
       const playersAtSame = state.players.filter(p => p.score === currentPlayer.score);
       if (playersAtSame.length >= 2) {
         const names = playersAtSame.map(p => p.name).join(" & ");
-        addLog(`${names} are tied at ${currentPlayer.score}. Both drink.`, "drink");
+        addLog(`${names} are tied at ${currentPlayer.score}. All tied players drink.`, "drink");
       }
 
       const leaderId = getLeaderId();
