@@ -487,7 +487,7 @@
       color: var(--muted);
     }
 
-    /* Toast overlay: same size as scoreboard, black fill, tiled Triple Snakes-B5.png around a clear text band */
+    /* Toast overlay */
     #eventToast {
       position: fixed;
       border-radius: 18px;
@@ -603,10 +603,7 @@
       </div>
 
       <div class="scoreboard-body">
-        <!-- Default per-player totals -->
         <div class="players-list scoreboard-players" id="playersList"></div>
-
-        <!-- Round-by-round view container -->
         <div id="roundByRoundContainer" style="display:none;" class="round-table-wrapper"></div>
       </div>
     </div>
@@ -657,6 +654,10 @@
           <label class="radio-pill">
             <input type="radio" name="outcomeType" value="diceOff" />
             Dice off table
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="manual" />
+            Manual Score Entry
           </label>
         </div>
       </div>
@@ -724,7 +725,6 @@
           </div>
         </div>
 
-        <!-- Hidden fields reused by computeTurnScore -->
         <input id="matchFace1" type="hidden" />
         <input id="matchCount1" type="hidden" />
         <input id="matchFace2" type="hidden" />
@@ -846,12 +846,12 @@
         </div>
       </div>
 
-      <div class="divider"></div>
-
-      <div class="row">
-        <div class="flex-1">
-          <label>Override score (optional)</label>
-          <input id="overrideScore" type="number" placeholder="Leave blank to auto-calc" />
+      <!-- Manual Score Entry -->
+      <div id="manualFields" class="mt-8" style="display:none;">
+        <label>Manual score for this turn</label>
+        <input id="manualScore" type="number" min="0" placeholder="Enter points for this turn" />
+        <div class="mt-4 muted">
+          Use when you want to enter a custom turn score instead of using the automatic rules.
         </div>
       </div>
 
@@ -869,7 +869,7 @@
       <div class="log" id="logContainer"></div>
     </div>
 
-    <!-- Hall of Fame toggle + section at bottom, above footer -->
+    <!-- Hall of Fame -->
     <button class="hof-toggle-btn" id="hofToggle">
       Hall of Fame
     </button>
@@ -909,7 +909,6 @@
   </footer>
 </div>
 
-<!-- Toast overlay for game events, sized to scoreboard via JS -->
 <div id="eventToast" aria-live="polite" aria-atomic="true">
   <div id="eventToastInner">
     <span id="eventToastText"></span>
@@ -933,7 +932,6 @@
   };
 
   const qs = (sel) => document.querySelector(sel);
-
   const setupCard = qs("#setupCard");
   const scoreCard = qs("#scoreCard");
   const turnCard = qs("#turnCard");
@@ -950,7 +948,6 @@
   const scoreboardTitle = qs("#scoreboardTitle");
   const roundByRoundBtn = qs("#roundByRoundBtn");
 
-  // Hall of Fame toggle behavior
   const hofToggleBtn = document.getElementById("hofToggle");
   const hofSection = document.getElementById("hall-of-fame");
   hofToggleBtn.addEventListener("click", () => {
@@ -961,14 +958,13 @@
     }
   });
 
-  // Toast overlay behavior
   const eventToast = document.getElementById("eventToast");
   const eventToastText = document.getElementById("eventToastText");
   let toastTimeout;
 
   function positionEventToast() {
     if (!eventToast || !scoreCard) return;
-    const rect = scoreCard.getBoundingClientRect(); // exact size of scoreboard [web:365]
+    const rect = scoreCard.getBoundingClientRect();
     eventToast.style.top = rect.top + "px";
     eventToast.style.left = rect.left + "px";
     eventToast.style.width = rect.width + "px";
@@ -1141,9 +1137,12 @@
       state.round++;
       state.turnsThisRound = 0;
       state.consecutiveZeroTurnsInRound = 0;
-      const msg = `All players completed their turns. Starting Round ${state.round}.`;
-      addLog(msg, "system");
-      showEventToast(msg);
+
+      if (state.round === 3) {
+        const msg = "Start of Round 3 -- Ties and Lead Change Drinks Now in Effect";
+        addLog(msg, "system");
+        showEventToast(msg);
+      }
     }
     renderScoreboard();
   }
@@ -1259,6 +1258,11 @@
       return { score: 77, events: ["bustTo77"] };
     }
 
+    if (outcomeType === "manual") {
+      const val = parseInt(qs("#manualScore").value, 10);
+      return { score: isNaN(val) ? 0 : val, events };
+    }
+
     if (outcomeType === "match") {
       const f1 = parseInt(qs("#matchFace1").value, 10);
       const c1 = parseInt(qs("#matchCount1").value, 10);
@@ -1312,8 +1316,8 @@
     if (outcomeType === "diceOff") {
       const lost = parseInt(qs("#diceLost").value, 10);
       const matched = qs("#diceOffMatched").value === "yes";
-      if (isNaN(lost)) return { score: 0, events: ["diceOff"] };
       events.push("diceOff");
+      if (isNaN(lost)) return { score: 0, events };
       if (!matched) {
         return { score: 0, events };
       } else {
@@ -1336,12 +1340,14 @@
       straight: qs("#straightFields"),
       zeroPoints: null,
       bust77: null,
-      diceOff: qs("#diceOffFields")
+      diceOff: qs("#diceOffFields"),
+      manual: qs("#manualFields")
     };
     qs("#matchFields").style.display = "none";
     qs("#fourKindFields").style.display = "none";
     qs("#straightFields").style.display = "none";
     qs("#diceOffFields").style.display = "none";
+    qs("#manualFields").style.display = "none";
     if (blocks[outcomeType]) blocks[outcomeType].style.display = "block";
 
     const hints = {
@@ -1350,7 +1356,8 @@
       straight: "Use only when a first-roll straight and green die were used.",
       zeroPoints: "Use when the turn ends with 0 points (no matches or snake eyes).",
       bust77: "Use when the player busts and must reset directly to 77.",
-      diceOff: "One or more dice went off the table this turn."
+      diceOff: "One or more dice went off the table this turn.",
+      manual: "Use when you want to type in a custom score for this turn."
     };
     turnHint.textContent = hints[outcomeType] || "";
   }
@@ -1438,7 +1445,6 @@
     advanceTurn();
   };
 
-  // Round-by-round toggle button
   roundByRoundBtn.onclick = () => {
     state.showRoundByRound = !state.showRoundByRound;
     renderScoreboard();
@@ -1446,18 +1452,11 @@
 
   qs("#submitTurnBtn").onclick = () => {
     const p = state.players[state.currentIndex];
-    const override = qs("#overrideScore").value.trim();
     const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
 
-    let turnScore, events;
-    if (override !== "") {
-      turnScore = parseInt(override, 10) || 0;
-      events = [];
-    } else {
-      const res = computeTurnScore();
-      turnScore = res.score;
-      events = res.events;
-    }
+    const res = computeTurnScore();
+    let turnScore = res.score;
+    const events = res.events;
 
     let before = p.score;
     let after = p.score;
@@ -1536,7 +1535,7 @@
     evaluateWinState(p);
 
     state.showRoundByRound = false;
-    qs("#overrideScore").value = "";
+    if (qs("#manualScore")) qs("#manualScore").value = "";
     advanceTurn();
   };
 
@@ -1579,7 +1578,6 @@
     renderScoreboard();
   };
 
-  // Match: dice-face and count button wiring
   const matchFaceInput = qs("#matchFace1");
   const matchCountInput = qs("#matchCount1");
 
@@ -1601,7 +1599,6 @@
     });
   });
 
-  // Four-of-a-kind: dice-face picker
   const fourKindFaceInput = qs("#fourKindFace");
 
   document.querySelectorAll("#fourKindDicePicker .die-btn").forEach(btn => {
@@ -1613,7 +1610,6 @@
     });
   });
 
-  // Four-of-a-kind: bonus yes/no toggle
   const fourKindBonusInput = qs("#fourKindBonus");
   const fourKindBonusToggle = qs("#fourKindBonusToggle");
 
