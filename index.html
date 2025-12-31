@@ -317,7 +317,6 @@
       border-radius: 10px;
     }
 
-    /* Round by round table */
     .round-table {
       width: 100%;
       border-collapse: collapse;
@@ -348,7 +347,6 @@
       margin-top: 4px;
     }
 
-    /* Dice pickers */
     .dice-picker {
       display: flex;
       flex-wrap: wrap;
@@ -377,7 +375,6 @@
       color: var(--accent);
     }
 
-    /* Dice faces */
     .die {
       background: #fff;
       border-radius: 8px;
@@ -405,7 +402,6 @@
     .pos-8 { grid-area: 3 / 2; justify-self: center; align-self: center; }
     .pos-9 { grid-area: 3 / 3; justify-self: center; align-self: center; }
 
-    /* Four-of-a-kind bonus toggle */
     .toggle-btn {
       min-width: 140px;
       justify-content: center;
@@ -421,7 +417,6 @@
       box-shadow: none;
     }
 
-    /* Hall of Fame (collapsible) */
     .hof-toggle-btn {
       width: 100%;
       margin: 10px 0 4px;
@@ -487,7 +482,6 @@
       color: var(--muted);
     }
 
-    /* Toast overlay */
     #eventToast {
       position: fixed;
       border-radius: 18px;
@@ -569,7 +563,6 @@
       Smart scorekeeper for the Triple Snakes dice game.
     </div>
 
-    <!-- Setup -->
     <div class="card" id="setupCard">
       <h2>Players</h2>
       <div class="row">
@@ -586,7 +579,6 @@
       <div class="players-list" id="playersSetupList"></div>
     </div>
 
-    <!-- Scoreboard -->
     <div class="scoreboard" id="scoreCard" style="display:none;">
       <div class="scoreboard-top">
         <div>
@@ -608,7 +600,6 @@
       </div>
     </div>
 
-    <!-- Edit / Round-by-round buttons -->
     <div class="mt-6" id="editScoreWrapper" style="display:none;">
       <div class="row" style="justify-content:space-between; align-items:center;">
         <button class="btn btn-secondary btn-sm" id="editScoreBtn">
@@ -620,7 +611,6 @@
       </div>
     </div>
 
-    <!-- Turn Input -->
     <div class="card" id="turnCard" style="display:none;">
       <div class="row" style="justify-content:space-between; align-items:center;">
         <h2 style="margin-bottom:2px;">Current turn</h2>
@@ -644,6 +634,10 @@
             Straight attempt
           </label>
           <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="tripleSnakes" />
+            Triple Snakes
+          </label>
+          <label class="radio-pill">
             <input type="radio" name="outcomeType" value="zeroPoints" />
             Zero Points
           </label>
@@ -655,14 +649,9 @@
             <input type="radio" name="outcomeType" value="diceOff" />
             Dice off table
           </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="manual" />
-            Manual Score Entry
-          </label>
         </div>
       </div>
 
-      <!-- Match -->
       <div id="matchFields" class="mt-8">
         <h3 style="margin:0 0 4px;">Match</h3>
 
@@ -731,7 +720,6 @@
         <input id="matchCount2" type="hidden" />
       </div>
 
-      <!-- Four of a kind -->
       <div id="fourKindFields" class="mt-8" style="display:none;">
         <div>
           <label style="display:block; margin-bottom:4px;">Four-of-a-kind face</label>
@@ -803,7 +791,6 @@
         </div>
       </div>
 
-      <!-- Straight -->
       <div id="straightFields" class="mt-8" style="display:none;">
         <label>Straight attempt result</label>
         <select id="straightResult">
@@ -816,7 +803,30 @@
         </div>
       </div>
 
-      <!-- Dice off table -->
+      <div id="tripleSnakesFields" class="mt-8" style="display:none;">
+        <label>Triple Snakes scoring</label>
+        <div class="match-count-picker" id="tripleSnakesToggle">
+          <button
+            type="button"
+            class="btn btn-sm match-count-btn selected"
+            data-mode="tieLeader"
+          >
+            Tie Current Leader
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm match-count-btn"
+            data-mode="3"
+          >
+            Take 3 points
+          </button>
+        </div>
+        <input id="tripleSnakesMode" type="hidden" value="tieLeader" />
+        <div class="mt-4 muted">
+          Tie-the-leader sets this player's total score equal to the current highest score on the board.
+        </div>
+      </div>
+
       <div id="diceOffFields" class="mt-8" style="display:none;">
         <div class="cols-2">
           <div>
@@ -846,14 +856,7 @@
         </div>
       </div>
 
-      <!-- Manual Score Entry -->
-      <div id="manualFields" class="mt-8" style="display:none;">
-        <label>Manual score for this turn</label>
-        <input id="manualScore" type="number" min="0" placeholder="Enter points for this turn" />
-        <div class="mt-4 muted">
-          Use when you want to enter a custom turn score instead of using the automatic rules.
-        </div>
-      </div>
+      <div class="divider"></div>
 
       <div class="mt-8 row" style="justify-content:space-between; align-items:center;">
         <button class="btn" id="submitTurnBtn">Submit turn</button>
@@ -863,13 +866,11 @@
       <div class="mt-6 muted" id="turnHint"></div>
     </div>
 
-    <!-- Log -->
     <div class="card" id="logCard" style="display:none;">
       <h2>Game Tracker</h2>
       <div class="log" id="logContainer"></div>
     </div>
 
-    <!-- Hall of Fame -->
     <button class="hof-toggle-btn" id="hofToggle">
       Hall of Fame
     </button>
@@ -961,6 +962,8 @@
   const eventToast = document.getElementById("eventToast");
   const eventToastText = document.getElementById("eventToastText");
   let toastTimeout;
+  const toastQueue = [];
+  let toastActive = false;
 
   function positionEventToast() {
     if (!eventToast || !scoreCard) return;
@@ -972,14 +975,32 @@
   }
 
   function showEventToast(message) {
-    if (!eventToast || !scoreCard) return;
     positionEventToast();
     eventToastText.textContent = message;
     eventToast.style.display = "block";
     clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => {
       eventToast.style.display = "none";
+      toastActive = false;
+      if (toastQueue.length > 0) {
+        const next = toastQueue.shift();
+        startToast(next);
+      }
     }, 3000);
+  }
+
+  function startToast(message) {
+    toastActive = true;
+    showEventToast(message);
+  }
+
+  function queueToast(message) {
+    if (!eventToast || !scoreCard) return;
+    if (toastActive) {
+      toastQueue.push(message);
+    } else {
+      startToast(message);
+    }
   }
 
   window.addEventListener("resize", () => {
@@ -1017,6 +1038,15 @@
     });
     const leaders = state.players.filter(p => p.score === best.score);
     return leaders.length === 1 ? best.id : null;
+  }
+
+  function getLeaderScore() {
+    if (state.players.length === 0) return 0;
+    let best = state.players[0].score;
+    state.players.forEach(p => {
+      if (p.score > best) best = p.score;
+    });
+    return best;
   }
 
   function renderScoreboardNormal() {
@@ -1128,6 +1158,10 @@
     state.roundScores.push({ round: state.round, scores });
   }
 
+  function getCompletedRoundsCount() {
+    return state.roundScores.length;
+  }
+
   function advanceTurn() {
     state.currentIndex++;
     state.turnsThisRound++;
@@ -1138,10 +1172,10 @@
       state.turnsThisRound = 0;
       state.consecutiveZeroTurnsInRound = 0;
 
-      if (state.round === 3) {
-        const msg = "Start of Round 3 -- Ties and Lead Change Drinks Now in Effect";
+      if (state.round === 4) {
+        const msg = "Start of Round 4 -- Ties and Lead Change Drinks Now in Effect";
         addLog(msg, "system");
-        showEventToast(msg);
+        queueToast(msg);
       }
     }
     renderScoreboard();
@@ -1160,13 +1194,14 @@
   }
 
   function handleLeaderAndTies(currentPlayer) {
-    if (state.round >= 4 && state.phase === "normal") {
+    const completedRounds = getCompletedRoundsCount();
+    if (state.phase === "normal" && completedRounds >= 3) {
       const playersAtSame = state.players.filter(p => p.score === currentPlayer.score);
       if (playersAtSame.length >= 2) {
         const names = playersAtSame.map(p => p.name).join(" & ");
         const msg = `${names} are tied at ${currentPlayer.score}. All tied players drink.`;
         addLog(msg, "drink");
-        showEventToast(msg);
+        queueToast(msg);
       }
 
       const leaderId = getLeaderId();
@@ -1176,7 +1211,7 @@
         if (others.length > 0) {
           const msg = `Leader changed to ${leader.name}. All non-leaders drink.`;
           addLog(msg, "drink");
-          showEventToast(msg);
+          queueToast(msg);
         }
         state.lastLeaderId = leaderId;
       }
@@ -1187,7 +1222,7 @@
     if (state.consecutiveZeroTurnsInRound >= state.players.length && state.phase === "normal") {
       const msg = "All players netted 0 this round in consecutive turns. Group must shotgun or take a shot.";
       addLog(msg, "social");
-      showEventToast("Group 0 round – social drink!");
+      queueToast("Group 0 round – social drink!");
       state.consecutiveZeroTurnsInRound = 0;
     }
   }
@@ -1199,7 +1234,7 @@
         state.phase = "rebuttal";
         const msg = `${player.name} reached ${state.target}. Rebuttal round begins (others get one more turn).`;
         addLog(msg, "system");
-        showEventToast(`${player.name} hit ${state.target}! Rebuttal round.`);
+        queueToast(`${player.name} hit ${state.target}! Rebuttal round.`);
       }
     } else if (state.phase === "rebuttal") {
       const others = state.players.filter(p => p.id !== state.winnerId);
@@ -1211,7 +1246,7 @@
           state.phase = "winRollOff";
           const msg = "Multiple players tied at 100 after rebuttal. Winner roll-off begins.";
           addLog(msg, "system");
-          showEventToast("Winner roll-off begins!");
+          queueToast("Winner roll-off begins!");
         } else {
           const minScore = Math.min(...state.players.map(p => p.score));
           const lastPlace = state.players.filter(p => p.score === minScore);
@@ -1219,11 +1254,11 @@
             state.phase = "lastRollOff";
             const msg = `Multiple players tied for last at ${minScore}. Last-place roll-off begins.`;
             addLog(msg, "system");
-            showEventToast("Last-place roll-off begins!");
+            queueToast("Last-place roll-off begins!");
           } else {
             const msg = `${winner.name} wins the game. Last-place is ${lastPlace[0].name}.`;
             addLog(msg, "system");
-            showEventToast(`${winner.name} wins! ${lastPlace[0].name} is last.`);
+            queueToast(`${winner.name} wins! ${lastPlace[0].name} is last.`);
           }
         }
       }
@@ -1232,7 +1267,7 @@
       if (tieGroup.length === 1) {
         const msg = `${tieGroup[0].name} wins the winner roll-off.`;
         addLog(msg, "system");
-        showEventToast(msg);
+        queueToast(msg);
       }
     } else if (state.phase === "lastRollOff") {
       const minScore = Math.min(...state.players.map(p => p.score));
@@ -1240,7 +1275,7 @@
       if (last.length === 1) {
         const msg = `${last[0].name} loses the last-place roll-off.`;
         addLog(msg, "system");
-        showEventToast(msg);
+        queueToast(msg);
       }
     }
   }
@@ -1258,9 +1293,14 @@
       return { score: 77, events: ["bustTo77"] };
     }
 
-    if (outcomeType === "manual") {
-      const val = parseInt(qs("#manualScore").value, 10);
-      return { score: isNaN(val) ? 0 : val, events };
+    if (outcomeType === "tripleSnakes") {
+      const mode = qs("#tripleSnakesMode").value;
+      if (mode === "3") {
+        return { score: 3, events: ["tripleSnakesTurn"] };
+      } else {
+        const leaderScore = getLeaderScore();
+        return { score: leaderScore, events: ["tripleSnakesTieLeader"] };
+      }
     }
 
     if (outcomeType === "match") {
@@ -1316,16 +1356,16 @@
     if (outcomeType === "diceOff") {
       const lost = parseInt(qs("#diceLost").value, 10);
       const matched = qs("#diceOffMatched").value === "yes";
-      events.push("diceOff");
-      if (isNaN(lost)) return { score: 0, events };
+      const ev = ["diceOff"];
+      if (isNaN(lost)) return { score: 0, events: ev };
       if (!matched) {
-        return { score: 0, events };
+        return { score: 0, events: ev };
       } else {
         const face = parseInt(qs("#diceOffFace").value, 10);
         const count = parseInt(qs("#diceOffCount").value, 10);
-        if (isNaN(face) || isNaN(count)) return { score: 0, events };
+        if (isNaN(face) || isNaN(count)) return { score: 0, events: ev };
         const s = face * count;
-        return { score: s, events };
+        return { score: s, events: ev };
       }
     }
 
@@ -1338,26 +1378,26 @@
       match: qs("#matchFields"),
       fourKind: qs("#fourKindFields"),
       straight: qs("#straightFields"),
+      tripleSnakes: qs("#tripleSnakesFields"),
       zeroPoints: null,
       bust77: null,
-      diceOff: qs("#diceOffFields"),
-      manual: qs("#manualFields")
+      diceOff: qs("#diceOffFields")
     };
     qs("#matchFields").style.display = "none";
     qs("#fourKindFields").style.display = "none";
     qs("#straightFields").style.display = "none";
+    qs("#tripleSnakesFields").style.display = "none";
     qs("#diceOffFields").style.display = "none";
-    qs("#manualFields").style.display = "none";
     if (blocks[outcomeType]) blocks[outcomeType].style.display = "block";
 
     const hints = {
       match: "Use for two/three-of-a-kind, Double-Double, or Triple Snakes.",
       fourKind: "Use when four-of-a-kind ended the turn (with or without bonus).",
       straight: "Use only when a first-roll straight and green die were used.",
+      tripleSnakes: "Use when rolling three 1s and choosing between tying the leader or taking 3 points.",
       zeroPoints: "Use when the turn ends with 0 points (no matches or snake eyes).",
       bust77: "Use when the player busts and must reset directly to 77.",
-      diceOff: "One or more dice went off the table this turn.",
-      manual: "Use when you want to type in a custom score for this turn."
+      diceOff: "One or more dice went off the table this turn."
     };
     turnHint.textContent = hints[outcomeType] || "";
   }
@@ -1370,6 +1410,15 @@
       e.target.closest(".radio-pill").classList.add("selected");
       updateOutcomeFields();
     }
+  });
+
+  document.querySelectorAll("#tripleSnakesToggle .match-count-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#tripleSnakesToggle .match-count-btn")
+        .forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#tripleSnakesMode").value = btn.dataset.mode;
+    });
   });
 
   function makeId() {
@@ -1432,7 +1481,7 @@
     qs("#editScoreWrapper").style.display = "block";
     const msg = "Game started. First player begins at Round 1.";
     addLog(msg, "system");
-    showEventToast("Game started – Round 1.");
+    queueToast("Game started – Round 1.");
     updateOutcomeFields();
     renderScoreboard();
   };
@@ -1441,7 +1490,7 @@
     const p = state.players[state.currentIndex];
     const msg = `${p.name}'s turn skipped.`;
     addLog(msg, "system");
-    showEventToast(msg);
+    queueToast(msg);
     advanceTurn();
   };
 
@@ -1467,14 +1516,32 @@
       p.score = 77;
       const msg = `${p.name} selected Bust (77): score set from ${before} to 77.`;
       addLog(msg, "drink");
-      showEventToast(`${p.name} busts to 77. Drink!`);
+      queueToast(`${p.name} busts to 77. Drink!`);
+      state.consecutiveZeroTurnsInRound = 0;
+    } else if (outcomeType === "tripleSnakes") {
+      const mode = qs("#tripleSnakesMode").value;
+      const leaderScore = getLeaderScore();
+      before = p.score;
+      if (mode === "3") {
+        after = before + 3;
+        p.score = after;
+        const msg = `${p.name} chose Triple Snakes for 3 points (from ${before} to ${after}).`;
+        addLog(msg, "social");
+        queueToast(`Triple Snakes! ${p.name} scores +3 and calls a social.`);
+      } else {
+        after = leaderScore;
+        p.score = after;
+        const msg = `${p.name} used Triple Snakes to tie the leader at ${after}.`;
+        addLog(msg, "social");
+        queueToast(`Triple Snakes! ${p.name} ties the leader at ${after}. Social drink!`);
+      }
       state.consecutiveZeroTurnsInRound = 0;
     } else {
       if (turnScore === 0) {
         state.consecutiveZeroTurnsInRound++;
         const zeroMsg = `${p.name} scored 0 this turn.`;
         addLog(zeroMsg, "drink");
-        showEventToast(`${p.name} drinks – 0 points.`);
+        queueToast(`${p.name} drinks – 0 points.`);
       } else {
         state.consecutiveZeroTurnsInRound = 0;
       }
@@ -1487,7 +1554,7 @@
       if (result.bust && (state.phase === "normal" || state.phase === "rebuttal")) {
         const msg = `${p.name} busted over ${state.target} and resets to 77. Drinks.`;
         addLog(msg, "drink");
-        showEventToast(`${p.name} busts! Reset to 77 and drink.`);
+        queueToast(`${p.name} busts! Reset to 77 and drink.`);
       }
 
       if (turnScore === 0) {
@@ -1502,40 +1569,39 @@
     if (events.includes("tripleSnakes")) {
       const msg = `${p.name} rolled Triple Snakes (three 1s). Social drink.`;
       addLog(msg, "social");
-      showEventToast(`Triple Snakes! ${p.name} calls a social.`);
+      queueToast(`Triple Snakes! ${p.name} calls a social.`);
     }
     if (events.includes("fourKind")) {
       const msg = `${p.name} rolled four-of-a-kind. Social drink.`;
       addLog(msg, "social");
-      showEventToast(`Four-of-a-kind! Social drink.`);
+      queueToast(`Four-of-a-kind! Social drink.`);
     }
     if (events.includes("straightSuccess")) {
       const msg = `${p.name} completed the straight via green die.`;
       addLog(msg, "info");
-      showEventToast(`Straight! ${p.name} scores big.`);
+      queueToast(`Straight! ${p.name} scores big.`);
     }
     if (events.includes("straightFail")) {
       const msg = `${p.name} failed to complete the straight and scored 0.`;
       addLog(msg, "drink");
-      showEventToast(`${p.name} drinks – straight failed.`);
+      queueToast(`${p.name} drinks – straight failed.`);
     }
     if (events.includes("snakeEyes")) {
       const msg = `${p.name} rolled snake eyes and ends the turn with 0.`;
       addLog(msg, "drink");
-      showEventToast(`Snake eyes! ${p.name} drinks.`);
+      queueToast(`Snake eyes! ${p.name} drinks.`);
     }
     if (events.includes("diceOff")) {
       const lost = parseInt(qs("#diceLost").value, 10) || 1;
       const msg = `${p.name} rolled ${lost} die/dice off the table. Drinks ${lost}.`;
       addLog(msg, "drink");
-      showEventToast(`${p.name} drinks ${lost} – dice off table.`);
+      queueToast(`${p.name} drinks ${lost} – dice off table.`);
     }
 
     handleLeaderAndTies(p);
     evaluateWinState(p);
 
     state.showRoundByRound = false;
-    if (qs("#manualScore")) qs("#manualScore").value = "";
     advanceTurn();
   };
 
@@ -1573,7 +1639,7 @@
 
     const msg = `Score edited for ${player.name}: ${oldScore} → ${newScore}.`;
     addLog(msg, "system");
-    showEventToast(`Score edited: ${player.name} is now at ${newScore}.`);
+    queueToast(`Score edited: ${player.name} is now at ${newScore}.`);
 
     renderScoreboard();
   };
