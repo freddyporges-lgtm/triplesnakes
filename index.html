@@ -207,7 +207,7 @@
       font-weight: 600;
     }
     .log-entry.system-message {
-      color: #39ff14; /* neon green for system messages */
+      color: #39ff14;
     }
     .chips {
       display: flex;
@@ -323,6 +323,65 @@
     .scoreboard .current-turn {
       border-radius: 10px;
     }
+
+    /* Dice faces for Match picker */
+    .dice-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .die-btn {
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+    .die-btn .die {
+      width: 40px;
+      height: 40px;
+    }
+    .die-btn.selected .die {
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    .match-count-picker {
+      display: flex;
+      gap: 6px;
+    }
+    .match-count-btn.selected {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* Dice grid/pips */
+    .die {
+      width: 60px;
+      height: 60px;
+      background: #fff;
+      border-radius: 8px;
+      border: 2px solid #333;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      padding: 6px;
+      box-sizing: border-box;
+    }
+    .pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #333;
+      margin: auto;
+    }
+    .pos-1 { grid-area: 1 / 1; }
+    .pos-2 { grid-area: 1 / 2; }
+    .pos-3 { grid-area: 1 / 3; }
+    .pos-4 { grid-area: 2 / 1; }
+    .pos-5 { grid-area: 2 / 2; }
+    .pos-6 { grid-area: 2 / 3; }
+    .pos-7 { grid-area: 3 / 1; }
+    .pos-8 { grid-area: 3 / 2; }
+    .pos-9 { grid-area: 3 / 3; }
   </style>
 </head>
 <body>
@@ -398,7 +457,7 @@
         <div class="radio-row" id="outcomeTypeGroup">
           <label class="radio-pill selected">
             <input type="radio" name="outcomeType" value="match" checked />
-            Match / normal
+            Match
           </label>
           <label class="radio-pill">
             <input type="radio" name="outcomeType" value="fourKind" />
@@ -423,29 +482,75 @@
         </div>
       </div>
 
-      <!-- Match / Double-Double / Triple Snakes -->
+      <!-- Match -->
       <div id="matchFields" class="mt-8">
-        <div class="cols-2">
-          <div>
-            <label>First match face</label>
-            <input id="matchFace1" type="number" min="1" max="6" placeholder="1–6" />
-          </div>
-          <div>
-            <label>Count</label>
-            <input id="matchCount1" type="number" min="2" max="4" placeholder="2–4" />
-          </div>
-          <div>
-            <label>Second match face (optional)</label>
-            <input id="matchFace2" type="number" min="1" max="6" placeholder="1–6" />
-          </div>
-          <div>
-            <label>Count</label>
-            <input id="matchCount2" type="number" min="2" max="4" placeholder="2–4" />
+        <h3 style="margin:0 0 4px;">Match</h3>
+
+        <div class="mt-4">
+          <label style="display:block; margin-bottom:4px;">Select Dice Face</label>
+          <div class="dice-picker" id="matchDicePicker">
+            <button type="button" class="die-btn" data-face="1" aria-label="Face 1">
+              <div class="die">
+                <div class="pip pos-5"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-5"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-5"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-4"></div>
+                <div class="pip pos-6"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
           </div>
         </div>
-        <div class="mt-4 muted">
-          Examples: Triple Snakes = face 1, count 3. Double-Double = 2+2 and 4+4 → face1=2,count1=2; face2=4,count2=2.
+
+        <div class="mt-6">
+          <label style="display:block; margin-bottom:4px;">How many matches</label>
+          <div class="match-count-picker" id="matchCountPicker">
+            <button type="button" class="btn btn-sm match-count-btn" data-count="2">2x</button>
+            <button type="button" class="btn btn-sm match-count-btn" data-count="3">3x</button>
+            <button type="button" class="btn btn-sm match-count-btn" data-count="4">4x</button>
+          </div>
         </div>
+
+        <!-- Hidden fields reused by computeTurnScore -->
+        <input id="matchFace1" type="hidden" />
+        <input id="matchCount1" type="hidden" />
+        <input id="matchFace2" type="hidden" />
+        <input id="matchCount2" type="hidden" />
       </div>
 
       <!-- Four of a kind -->
@@ -481,6 +586,8 @@
           Only valid if the straight was from the first roll using the green die.
         </div>
       </div>
+
+      <!-- Snake eyes / No score have no extra fields -->
 
       <!-- Dice off table -->
       <div id="diceOffFields" class="mt-8" style="display:none;">
@@ -977,7 +1084,7 @@
     advanceTurn();
   };
 
-  // Edit a prior score: choose player and set a new total
+  // Edit a prior score
   qs("#editScoreBtn").onclick = () => {
     if (state.players.length === 0) return;
 
@@ -1017,6 +1124,28 @@
 
     renderScoreboard();
   };
+
+  // Match: dice-face and count button wiring
+  const matchFaceInput = qs("#matchFace1");
+  const matchCountInput = qs("#matchCount1");
+
+  document.querySelectorAll("#matchDicePicker .die-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#matchDicePicker .die-btn")
+        .forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      matchFaceInput.value = btn.dataset.face;
+    });
+  });
+
+  document.querySelectorAll("#matchCountPicker .match-count-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#matchCountPicker .match-count-btn")
+        .forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      matchCountInput.value = btn.dataset.count;
+    });
+  });
 </script>
 </body>
 </html>
