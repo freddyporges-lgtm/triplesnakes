@@ -1,1 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Triple Snakes Scoreboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #062530, #02080b 60%);
+      color: #f4f9fb;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .app {
+      max-width: 480px;
+      width: 100%;
+      padding: 10px 12px 16px;
+    }
+    .scoreboard {
+      position: relative;
+      background: radial-gradient(circle at top, #050b12, #020509 70%);
+      border-radius: 18px;
+      padding: 14px 12px 12px;
+      margin-bottom: 10px;
+      box-shadow:
+        0 0 0 2px #11161d,
+        0 0 0 4px #202733,
+        0 14px 28px rgba(0,0,0,0.65);
+      border: 2px solid #202733;
+    }
+    .scoreboard-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .scoreboard-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #b8c4cc;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .chip {
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #07171d;
+      color: #88a0aa;
+    }
+    .scoreboard-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      font-size: 0.75rem;
+      color: #88a0aa;
+    }
+    .scoreboard-target-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #050c11;
+    }
+    .player-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .score {
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .leader {
+      color: #1dd68f;
+    }
+    .current-turn {
+      border: 1px solid #1dd68f;
+      box-shadow: 0 0 0 1px rgba(29,214,143,0.28);
+    }
+    .pill-warning {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: rgba(255, 209, 102, 0.16);
+      color: #ffd166;
+    }
+    .muted {
+      color: #88a0aa;
+      font-size: 0.78rem;
+      margin-top: 8px;
+    }
+    h1 {
+      font-size: 1.2rem;
+      text-align: center;
+      margin: 4px 0 6px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <h1>Triple Snakes Scoreboard</h1>
+  <div id="status" class="muted">Loading game...</div>
+  <div class="scoreboard" id="board" style="display:none;">
+    <div class="scoreboard-top">
+      <div>
+        <div class="scoreboard-title" id="boardTitle">Triple Snakes Arena</div>
+        <div class="chips">
+          <span class="chip" id="roundChip">Round 1</span>
+          <span class="chip" id="phaseChip">Normal play</span>
+          <span class="chip" id="gameIdChip"></span>
+        </div>
+      </div>
+      <div class="scoreboard-meta">
+        <span>Target</span>
+        <span class="scoreboard-target-value" id="targetScoreLabel">100</span>
+      </div>
+    </div>
+    <div class="players-list" id="playersList"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    onValue
+  } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get("game");
+
+  const statusEl = document.getElementById("status");
+  const boardEl = document.getElementById("board");
+  const roundChip = document.getElementById("roundChip");
+  const phaseChip = document.getElementById("phaseChip");
+  const gameIdChip = document.getElementById("gameIdChip");
+  const targetScoreLabel = document.getElementById("targetScoreLabel");
+  const playersList = document.getElementById("playersList");
+
+  if (!gameId) {
+    statusEl.textContent = "No game specified. Ask the scorekeeper for the viewer link.";
+  } else {
+    gameIdChip.textContent = `Game ID: ${gameId}`;
+    const gameRef = ref(db, `games/${gameId}`);
+    onValue(gameRef, (snap) => {
+      const data = snap.val();
+      if (!data) {
+        statusEl.textContent = "Waiting for game to start or game has ended.";
+        boardEl.style.display = "none";
+        return;
+      }
+      statusEl.style.display = "none";
+      boardEl.style.display = "block";
+
+      const phaseText = {
+        normal: "Normal play",
+        rebuttal: "Rebuttal round",
+        winRollOff: "Winner roll-off",
+        lastRollOff: "Last-place roll-off"
+      }[data.phase || "normal"];
+
+      roundChip.textContent = `Round ${data.round || 1}`;
+      phaseChip.textContent = phaseText;
+      targetScoreLabel.textContent = data.target ?? 100;
+
+      const players = data.players || [];
+      const currentIndex = data.currentIndex ?? 0;
+      const winnerId = data.winnerId || null;
+
+      playersList.innerHTML = "";
+      let leaderId = null;
+      if (players.length > 0) {
+        let best = players[0];
+        players.forEach(p => {
+          if (p.score > best.score) best = p;
+        });
+        const leaders = players.filter(p => p.score === best.score);
+        leaderId = leaders.length === 1 ? best.id : null;
+      }
+
+      players.forEach((p, i) => {
+        const div = document.createElement("div");
+        div.className = "player-row" + (i === currentIndex ? " current-turn" : "");
+        const scoreClass = "score" + (p.id === leaderId ? " leader" : "");
+        div.innerHTML = `
+          <div class="player-main">
+            <span>${p.name}</span>
+            ${p.id === winnerId ? '<span class="pill-warning">Winner</span>' : ""}
+          </div>
+          <div><span class="${scoreClass}">${p.score}</span></div>
+        `;
+        playersList.appendChild(div);
+      });
+    }, () => {
+      statusEl.textContent = "Error loading game. Check your connection.";
+      boardEl.style.display = "none";
+    });
+  }
+</script>
+</body>
+</html>
 
