@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>Triple Snakes Scorekeeper</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <style>
     :root {
       --bg: #041014;
@@ -25,58 +28,25 @@
       display: flex;
       flex-direction: column;
     }
-    .app-shell {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-    }
+    .app-shell { flex: 1; display: flex; flex-direction: column; align-items: stretch; }
     .app {
       max-width: 480px;
       width: 100%;
       margin: 0 auto;
-      padding: 0 12px 12px;
+      padding: 4px 12px 12px;
       flex: 1;
       display: flex;
       flex-direction: column;
     }
-
-    .app-header,
-    .app-footer {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0;
-    }
-    .logo-top {
-      max-width: 360px;
-      width: 80%;
-      height: auto;
-      display: block;
-    }
-    .logo-bottom {
-      max-width: 180px;
-      width: 60%;
-      height: auto;
-      display: block;
-    }
+    .app-header, .app-footer { display: flex; justify-content: center; align-items: center; padding: 2px 0; }
+    .logo-top { max-width: 360px; width: 80%; height: auto; display: block; }
+    .logo-bottom { max-width: 180px; width: 60%; height: auto; display: block; }
     @media (max-width: 480px) {
       .logo-top { max-width: 300px; }
       .logo-bottom { max-width: 150px; }
     }
-
-    h1 {
-      font-size: 1.2rem;
-      margin: 0 0 2px;
-      text-align: center;
-    }
-    .tagline {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-align: center;
-      margin-bottom: 4px;
-    }
-
+    h1 { font-size: 1.2rem; margin: 4px 0 2px; text-align: center; }
+    .tagline { font-size: 0.8rem; color: var(--muted); text-align: center; margin-bottom: 8px; }
     .card {
       background: var(--card);
       border-radius: 12px;
@@ -84,16 +54,8 @@
       margin-bottom: 10px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.4);
     }
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    label {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 0.8rem; color: var(--muted); }
     input, select {
       border-radius: 999px;
       border: 1px solid #21444f;
@@ -104,11 +66,7 @@
       width: 100%;
     }
     input[type="number"] { text-align: center; }
-    input:focus, select:focus {
-      outline: 2px solid var(--accent);
-      outline-offset: 0;
-    }
-
+    input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
     .btn {
       border-radius: 999px;
       border: none;
@@ -127,460 +85,148 @@
       min-width: 44px;
     }
     .btn:active { transform: translateY(1px); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
-    .btn-secondary {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid #21444f;
-      box-shadow: none;
-    }
-    .btn-danger {
-      background: transparent;
-      color: var(--danger);
-      border: 1px solid rgba(255,75,106,0.5);
-      box-shadow: none;
-    }
-    .btn-sm {
-      padding: 8px 12px;
-      font-size: 0.8rem;
-      min-height: 40px;
-    }
+    .btn-secondary { background: transparent; color: var(--muted); border: 1px solid #21444f; box-shadow: none; }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(255,75,106,0.5); box-shadow: none; }
+    .btn-sm { padding: 8px 12px; font-size: 0.8rem; min-height: 40px; }
     .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      background: var(--accent-soft);
-      color: var(--accent);
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;
+      border-radius: 999px; font-size: 0.7rem; background: var(--accent-soft); color: var(--accent);
     }
-    .pill-danger {
-      background: rgba(255, 75, 106, 0.12);
-      color: var(--danger);
-    }
-    .pill-warning {
-      background: rgba(255, 209, 102, 0.16);
-      color: var(--warning);
-    }
-    .players-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 6px;
-    }
+    .pill-danger { background: rgba(255, 75, 106, 0.12); color: var(--danger); }
+    .pill-warning { background: rgba(255, 209, 102, 0.16); color: var(--warning); }
+    .players-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
     .player-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 8px;
-      border-radius: 999px;
-      background: #07171d;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 8px; border-radius: 999px; background: #07171d;
     }
-    .player-main {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .score {
-      font-weight: 700;
-      letter-spacing: 0.03em;
-    }
+    .player-main { display: flex; align-items: center; gap: 6px; }
+    .score { font-weight: 700; letter-spacing: 0.03em; }
     .leader { color: var(--accent); }
-    .current-turn {
-      border: 1px solid var(--accent);
-      box-shadow: 0 0 0 1px rgba(29,214,143,0.28);
-    }
-    .log {
-      max-height: 200px;
-      overflow-y: auto;
-      font-size: 0.78rem;
-    }
-    .log-entry {
-      padding: 4px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-    .log-entry strong {
-      font-weight: 600;
-    }
-    .log-entry.system-message {
-      color: #39ff14;
-    }
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 4px;
-    }
-    .chip {
-      font-size: 0.7rem;
-      padding: 3px 7px;
-      border-radius: 999px;
-      background: #07171d;
-      color: var(--muted);
-    }
+    .current-turn { border: 1px solid var(--accent); box-shadow: 0 0 0 1px rgba(29,214,143,0.28); }
+    .log { max-height: 200px; overflow-y: auto; font-size: 0.78rem; }
+    .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .log-entry strong { font-weight: 600; }
+    .log-entry.system-message { color: #39ff14; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .chip { font-size: 0.7rem; padding: 3px 7px; border-radius: 999px; background: #07171d; color: var(--muted); }
     .flex-1 { flex: 1; }
     .mt-4 { margin-top: 4px; }
     .mt-6 { margin-top: 6px; }
     .mt-8 { margin-top: 8px; }
     .mt-10 { margin-top: 10px; }
     .muted { color: var(--muted); font-size: 0.78rem; }
-    .divider {
-      height: 1px;
-      background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
-      margin: 8px 0;
-    }
-
-    .radio-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
+    .divider { height: 1px; background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%); margin: 8px 0; }
+    .radio-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .radio-pill {
-      border-radius: 999px;
-      padding: 8px 10px;
-      border: 1px solid #21444f;
-      font-size: 0.8rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.1s ease,
-        box-shadow 0.15s ease;
+      border-radius: 999px; padding: 8px 10px; border: 1px solid #21444f; font-size: 0.8rem;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
     }
-    .radio-pill input {
-      width: auto;
-      margin: 0;
-    }
+    .radio-pill input { width: auto; margin: 0; }
     .radio-pill.selected {
-      border-color: var(--accent);
-      background: rgba(29,214,143,0.12);
-      color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5);
-      transform: translateY(-1px);
+      border-color: var(--accent); background: rgba(29,214,143,0.12); color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5); transform: translateY(-1px);
     }
-
-    .cols-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-    }
-    @media (max-width: 360px) {
-      h1 { font-size: 1.1rem; }
-    }
-
+    .cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 360px) { h1 { font-size: 1.1rem; } }
     .scoreboard {
-      position: relative;
-      background: radial-gradient(circle at top, #050b12, #020509 70%);
-      border-radius: 18px;
-      padding: 14px 12px 10px;
-      margin-bottom: 10px;
-      box-shadow:
-        0 0 0 2px #11161d,
-        0 0 0 4px #202733,
-        0 14px 28px rgba(0,0,0,0.65);
+      position: relative; background: radial-gradient(circle at top, #050b12, #020509 70%);
+      border-radius: 18px; padding: 14px 12px 10px; margin-bottom: 10px;
+      box-shadow: 0 0 0 2px #11161d, 0 0 0 4px #202733, 0 14px 28px rgba(0,0,0,0.65);
       border: 2px solid #202733;
     }
-    .scoreboard-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+    .scoreboard-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .scoreboard-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.12em; color: #b8c4cc; }
+    .scoreboard-meta { display: flex; flex-direction: column; align-items: flex-end; font-size: 0.75rem; color: var(--muted); }
+    .scoreboard-target-value { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.06em; }
+    .scoreboard-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .scoreboard-body { margin-top: 8px; }
+    .scoreboard-players { margin-top: 4px; }
+    .scoreboard .player-row { background: #050c11; border-radius: 10px; padding: 6px 10px; }
+    .scoreboard .current-turn { border-radius: 10px; }
+    .round-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 6px; }
+    .round-table th, .round-table td { border: 1px solid #1a2a33; padding: 4px 6px; text-align: center; }
+    .round-table th { background: #07171d; color: var(--muted); position: sticky; top: 0; z-index: 1; }
+    .round-table td.player-name { text-align: left; font-weight: 600; background: #050c11; }
+    .round-table-wrapper { max-height: 220px; overflow: auto; margin-top: 4px; }
+    .dice-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .die-btn { padding: 0; border: none; background: transparent; cursor: pointer; border-radius: 10px; }
+    .die-btn .die { width: 44px; height: 44px; }
+    .die-btn.selected .die { box-shadow: 0 0 0 2px var(--accent); }
+    .match-count-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+    .match-count-btn, .toggle-btn {
+      position: relative; border-radius: 999px; border: 1px solid #21444f; background: transparent;
+      color: var(--muted); box-shadow: none; padding: 8px 12px; font-size: 0.8rem; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
     }
-    .scoreboard-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: #b8c4cc;
+    .match-count-btn.selected, .toggle-btn.toggle-on {
+      border-color: var(--accent); background: rgba(29,214,143,0.12); color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5); transform: translateY(-1px);
     }
-    .scoreboard-meta {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-    .scoreboard-target-value {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-    }
-    .scoreboard-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 4px;
-    }
-    .scoreboard-body {
-      margin-top: 8px;
-    }
-    .scoreboard-players {
-      margin-top: 4px;
-    }
-    .scoreboard .player-row {
-      background: #050c11;
-      border-radius: 10px;
-      padding: 6px 10px;
-    }
-    .scoreboard .current-turn {
-      border-radius: 10px;
-    }
-
-    .round-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.78rem;
-      margin-top: 6px;
-    }
-    .round-table th,
-    .round-table td {
-      border: 1px solid #1a2a33;
-      padding: 4px 6px;
-      text-align: center;
-    }
-    .round-table th {
-      background: #07171d;
-      color: var(--muted);
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-    .round-table td.player-name {
-      text-align: left;
-      font-weight: 600;
-      background: #050c11;
-    }
-    .round-table-wrapper {
-      max-height: 220px;
-      overflow: auto;
-      margin-top: 4px;
-    }
-
-    .dice-picker {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .die-btn {
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      border-radius: 10px;
-    }
-    .die-btn .die {
-      width: 44px;
-      height: 44px;
-    }
-    .die-btn.selected .die {
-      box-shadow: 0 0 0 2px var(--accent);
-    }
-
-    .match-count-picker {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .match-count-btn,
-    .toggle-btn {
-      position: relative;
-      border-radius: 999px;
-      border: 1px solid #21444f;
-      background: transparent;
-      color: var(--muted);
-      box-shadow: none;
-      padding: 8px 12px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 36px;
-    }
-
-    .match-count-btn.selected,
-    .toggle-btn.toggle-on {
-      border-color: var(--accent);
-      background: rgba(29,214,143,0.12);
-      color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5);
-      transform: translateY(-1px);
-    }
-
     .die {
-      background: #fff;
-      border-radius: 8px;
-      border: 2px solid #333;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      padding: 4px;
-      box-sizing: border-box;
+      background: #fff; border-radius: 8px; border: 2px solid #333;
+      display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+      padding: 4px; box-sizing: border-box;
     }
-    .pip {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #333;
-      margin: auto;
-    }
-    .pos-1 { grid-area: 1 / 1; justify-self: center; align-self: center; }
-    .pos-2 { grid-area: 1 / 2; justify-self: center; align-self: center; }
-    .pos-3 { grid-area: 1 / 3; justify-self: center; align-self: center; }
-    .pos-4 { grid-area: 2 / 1; justify-self: center; align-self: center; }
-    .pos-5 { grid-area: 2 / 2; justify-self: center; align-self: center; }
-    .pos-6 { grid-area: 2 / 3; justify-self: center; align-self: center; }
-    .pos-7 { grid-area: 3 / 1; justify-self: center; align-self: center; }
-    .pos-8 { grid-area: 3 / 2; justify-self: center; align-self: center; }
-    .pos-9 { grid-area: 3 / 3; justify-self: center; align-self: center; }
-
-    .toggle-btn {
-      min-width: 140px;
-      justify-content: center;
-    }
-    .toggle-off {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid #21444f;
-      box-shadow: none;
-    }
-
+    .pip { width: 6px; height: 6px; border-radius: 50%; background: #333; margin: auto; }
+    .pos-1 { grid-area: 1 / 1; } .pos-2 { grid-area: 1 / 2; } .pos-3 { grid-area: 1 / 3; }
+    .pos-4 { grid-area: 2 / 1; } .pos-5 { grid-area: 2 / 2; } .pos-6 { grid-area: 2 / 3; }
+    .pos-7 { grid-area: 3 / 1; } .pos-8 { grid-area: 3 / 2; } .pos-9 { grid-area: 3 / 3; }
+    .toggle-btn { min-width: 140px; justify-content: center; }
+    .toggle-off { background: transparent; color: var(--muted); border: 1px solid #21444f; box-shadow: none; }
     .hof-toggle-btn {
-      width: 100%;
-      margin: 10px 0 4px;
-      border-radius: 999px;
-      border: 1px solid var(--accent);
-      background: rgba(29,214,143,0.16);
-      color: var(--accent);
-      font-size: 0.95rem;
-      font-weight: 600;
-      padding: 10px 14px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-height: 44px;
+      width: 100%; margin: 10px 0 4px; border-radius: 999px; border: 1px solid var(--accent);
+      background: rgba(29,214,143,0.16); color: var(--accent); font-size: 0.95rem; font-weight: 600;
+      padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; min-height: 44px;
     }
-    .hof-toggle-btn:hover {
-      background: rgba(29,214,143,0.26);
-    }
+    .hof-toggle-btn:hover { background: rgba(29,214,143,0.26); }
     #hall-of-fame {
-      margin: 8px 0 0;
-      padding: 10px;
-      background-color: #050c11;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      border: 1px solid #21444f;
-      display: none;
+      margin: 8px 0 0; padding: 10px; background-color: #050c11; border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid #21444f; display: none;
     }
-    #hall-of-fame h2 {
-      text-align: center;
-      margin: 0 0 10px;
-      font-size: 1rem;
-      color: var(--accent);
-    }
-    .hof-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 8px;
-    }
-    .hof-card {
-      border-radius: 8px;
-      padding: 8px;
-      text-align: center;
-      background-color: #07171d;
-      border: 1px solid #21444f;
-    }
-    .hof-card h3 {
-      margin: 0 0 4px;
-      font-size: 0.84rem;
-      color: var(--text);
-    }
-    .hof-value {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin: 2px 0;
-      color: var(--accent);
-    }
-    .hof-holder,
-    .hof-date {
-      margin: 1px 0;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-
+    #hall-of-fame h2 { text-align: center; margin: 0 0 10px; font-size: 1rem; color: var(--accent); }
+    .hof-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+    .hof-card { border-radius: 8px; padding: 8px; text-align: center; background-color: #07171d; border: 1px solid #21444f; }
+    .hof-card h3 { margin: 0 0 4px; font-size: 0.84rem; color: var(--text); }
+    .hof-value { font-size: 1.1rem; font-weight: 700; margin: 2px 0; color: var(--accent); }
+    .hof-holder, .hof-date { margin: 1px 0; font-size: 0.75rem; color: var(--muted); }
     #eventToast {
-      position: fixed;
-      border-radius: 18px;
-      border: 2px solid var(--accent);
-      box-shadow:
-        0 0 0 2px #11161d,
-        0 0 0 4px #202733,
-        0 14px 28px rgba(0,0,0,0.85);
-      z-index: 2000;
-      display: none;
-      box-sizing: border-box;
-      overflow: hidden;
-      background: #000;
+      position: fixed; border-radius: 18px; border: 2px solid var(--accent);
+      box-shadow: 0 0 0 2px #11161d, 0 0 0 4px #202733, 0 14px 28px rgba(0,0,0,0.85);
+      z-index: 2000; display: none; box-sizing: border-box; overflow: hidden; background: #000;
     }
     #eventToastInner {
-      width: 100%;
-      height: 100%;
-      background-color: #000;
-      background-image: url("Triple Snakes-B5.png");
-      background-repeat: repeat;
-      background-size: 80px 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      box-sizing: border-box;
+      width: 100%; height: 100%; background-color: #000; background-image: url("Triple Snakes-B5.png");
+      background-repeat: repeat; background-size: 80px 80px; display: flex; align-items: center;
+      justify-content: center; padding: 12px; box-sizing: border-box;
     }
     #eventToastText {
-      max-width: 82%;
-      width: 82%;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(0, 0, 0, 0.92);
-      color: #00ffc8;
-      font-size: 1rem;
-      font-weight: 800;
-      text-align: center;
-      text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+      max-width: 82%; width: 82%; padding: 10px 12px; border-radius: 14px; background: rgba(0, 0, 0, 0.92);
+      color: #00ffc8; font-size: 1rem; font-weight: 800; text-align: center; text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
     }
-
     @media (max-width: 480px) {
-      .app {
-        padding: 6px 8px 12px;
-      }
-      .card {
-        padding: 10px 10px;
-        margin-bottom: 8px;
-      }
-      .scoreboard {
-        padding: 12px 10px 8px;
-      }
-      .radio-row {
-        gap: 4px;
-      }
-      .radio-pill {
-        font-size: 0.78rem;
-      }
-      .hof-grid {
-        grid-template-columns: 1fr;
-      }
-      h1 {
-        font-size: 1.1rem;
-      }
-      .scoreboard-title {
-        font-size: 0.85rem;
-      }
+      .app { padding: 6px 8px 12px; }
+      .card { padding: 10px 10px; margin-bottom: 8px; }
+      .scoreboard { padding: 12px 10px 8px; }
+      .radio-row { gap: 4px; }
+      .radio-pill { font-size: 0.78rem; }
+      .hof-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.1rem; }
+      .scoreboard-title { font-size: 0.85rem; }
     }
+    /* Room/Viewer styles */
+    .room-banner {
+      background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 10px; text-align: center;
+    }
+    .room-code { font-size: 1.4rem; font-weight: 700; color: var(--accent); letter-spacing: 0.15em; }
+    .room-link { font-size: 0.75rem; color: var(--muted); word-break: break-all; margin-top: 4px; }
+    .viewer-banner {
+      background: rgba(255, 209, 102, 0.15); border: 1px solid var(--warning); border-radius: 10px;
+      padding: 8px 12px; margin-bottom: 10px; text-align: center; color: var(--warning); font-weight: 600;
+    }
+    .join-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid #21444f; }
   </style>
 </head>
 <body>
@@ -591,8 +237,19 @@
 
   <main class="app">
     <h1>Triple Snakes Scorekeeper</h1>
-    <div class="tagline">
-      Smart scorekeeper for the Triple Snakes dice game.
+    <div class="tagline">Smart scorekeeper for the Triple Snakes dice game.</div>
+
+    <!-- Room Banner (shown when hosting) -->
+    <div class="room-banner" id="roomBanner" style="display:none;">
+      <div>Room Code:</div>
+      <div class="room-code" id="roomCodeDisplay">----</div>
+      <div class="room-link" id="roomLinkDisplay"></div>
+      <button class="btn btn-sm mt-4" id="copyLinkBtn">Copy Link</button>
+    </div>
+
+    <!-- Viewer Banner (shown when viewing) -->
+    <div class="viewer-banner" id="viewerBanner" style="display:none;">
+      👁 Viewing Live Scoreboard
     </div>
 
     <div class="card" id="setupCard">
@@ -605,10 +262,21 @@
         <button class="btn btn-sm" id="addPlayerBtn">Add</button>
       </div>
       <div class="row mt-8">
-        <button class="btn" id="startGameBtn">Start game</button>
+        <button class="btn" id="startGameBtn">Start Game</button>
         <button class="btn btn-secondary btn-sm" id="resetGameBtn">Reset</button>
       </div>
       <div class="players-list" id="playersSetupList"></div>
+
+      <!-- Join Room Section -->
+      <div class="join-section">
+        <label>Or join an existing game as viewer:</label>
+        <div class="row mt-4">
+          <div class="flex-1">
+            <input id="joinRoomCode" type="text" placeholder="Enter room code" maxlength="6" style="text-transform: uppercase;" />
+          </div>
+          <button class="btn btn-secondary btn-sm" id="joinRoomBtn">Join</button>
+        </div>
+      </div>
     </div>
 
     <div class="scoreboard" id="scoreCard" style="display:none;">
@@ -625,7 +293,6 @@
           <span class="scoreboard-target-value" id="targetScoreLabel">100</span>
         </div>
       </div>
-
       <div class="scoreboard-body">
         <div class="players-list scoreboard-players" id="playersList"></div>
         <div id="roundByRoundContainer" style="display:none;" class="round-table-wrapper"></div>
@@ -634,12 +301,8 @@
 
     <div class="mt-6" id="editScoreWrapper" style="display:none;">
       <div class="row" style="justify-content:space-between; align-items:center;">
-        <button class="btn btn-secondary btn-sm" id="editScoreBtn">
-          Edit a Player's Score
-        </button>
-        <button class="btn btn-secondary btn-sm" id="roundByRoundBtn" aria-pressed="false">
-          Round by Round Scores
-        </button>
+        <button class="btn btn-secondary btn-sm" id="editScoreBtn">Edit a Player's Score</button>
+        <button class="btn btn-secondary btn-sm" id="roundByRoundBtn" aria-pressed="false">Round by Round Scores</button>
       </div>
     </div>
 
@@ -653,86 +316,28 @@
       <div class="mt-8">
         <label>Outcome type</label>
         <div class="radio-row" id="outcomeTypeGroup">
-          <label class="radio-pill selected">
-            <input type="radio" name="outcomeType" value="match" checked />
-            Match
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="doubleDouble" />
-            Double Double Match
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="fourKind" />
-            Four-of-a-kind
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="straight" />
-            Straight attempt
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="tripleSnakes" />
-            Triple Snakes
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="zeroPoints" />
-            Zero Points
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="bust77" />
-            Bust (77)
-          </label>
+          <label class="radio-pill selected"><input type="radio" name="outcomeType" value="match" checked /> Match</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="doubleDouble" /> Double Double Match</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="fourKind" /> Four-of-a-kind</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="straight" /> Straight attempt</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="tripleSnakes" /> Triple Snakes</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="zeroPoints" /> Zero Points</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="bust77" /> Bust (77)</label>
         </div>
       </div>
 
       <div id="matchFields" class="mt-8">
         <h3 style="margin:0 0 4px;">Match</h3>
-
         <div class="mt-4">
           <label style="display:block; margin-bottom:4px;">Select Dice Face</label>
           <div class="dice-picker" id="matchDicePicker">
-            <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="3" aria-label="Face 3">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="4" aria-label="Face 4">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="5" aria-label="Face 5">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="6" aria-label="Face 6">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-4"></div>
-                <div class="pip pos-6"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
           </div>
         </div>
-
         <div class="mt-6">
           <label style="display:block; margin-bottom:4px;">How many matches</label>
           <div class="match-count-picker" id="matchCountPicker">
@@ -740,7 +345,6 @@
             <button type="button" class="match-count-btn" data-count="3">3x</button>
           </div>
         </div>
-
         <input id="matchFace1" type="hidden" />
         <input id="matchCount1" type="hidden" />
         <input id="matchFace2" type="hidden" />
@@ -752,179 +356,50 @@
         <div class="mt-4">
           <label style="display:block; margin-bottom:4px;">First matching pair</label>
           <div class="dice-picker" id="ddPair1Picker">
-            <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="3" aria-label="Face 3">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="4" aria-label="Face 4">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="5" aria-label="Face 5">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="6" aria-label="Face 6">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-4"></div>
-                <div class="pip pos-6"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
           </div>
         </div>
         <div class="mt-4">
           <label style="display:block; margin-bottom:4px;">Second matching pair</label>
           <div class="dice-picker" id="ddPair2Picker">
-            <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="3" aria-label="Face 3">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="4" aria-label="Face 4">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="5" aria-label="Face 5">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="6" aria-label="Face 6">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-4"></div>
-                <div class="pip pos-6"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
           </div>
         </div>
-
         <input id="ddPair1Face" type="hidden" />
         <input id="ddPair2Face" type="hidden" />
-
-        <div class="mt-4 muted">
-          Use when two different pairs are made on the final roll. Score follows your Double Double rules (sum of both pairs).
-        </div>
+        <div class="mt-4 muted">Use when two different pairs are made on the final roll. Score follows your Double Double rules (sum of both pairs).</div>
       </div>
 
       <div id="fourKindFields" class="mt-8" style="display:none;">
         <div>
           <label style="display:block; margin-bottom:4px;">Four-of-a-kind face</label>
           <div class="dice-picker" id="fourKindDicePicker">
-            <button type="button" class="die-btn" data-face="1" aria-label="Face 1">
-              <div class="die">
-                <div class="pip pos-5"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="3" aria-label="Face 3">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="4" aria-label="Face 4">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="5" aria-label="Face 5">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-5"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
-            <button type="button" class="die-btn" data-face="6" aria-label="Face 6">
-              <div class="die">
-                <div class="pip pos-1"></div>
-                <div class="pip pos-3"></div>
-                <div class="pip pos-4"></div>
-                <div class="pip pos-6"></div>
-                <div class="pip pos-7"></div>
-                <div class="pip pos-9"></div>
-              </div>
-            </button>
+            <button type="button" class="die-btn" data-face="1" aria-label="Face 1"><div class="die"><div class="pip pos-5"></div></div></button>
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
           </div>
           <input id="fourKindFace" type="hidden" />
         </div>
-
         <div class="mt-6">
           <label style="display:block; margin-bottom:4px;">Use bonus?</label>
           <div class="match-count-picker" id="fourKindBonusGroup">
-            <button
-              type="button"
-              class="match-count-btn selected"
-              data-mode="bonus"
-            >
-              Yes (use bonus)
-            </button>
-            <button
-              type="button"
-              class="match-count-btn"
-              data-mode="normal"
-            >
-              No (mathematical score)
-            </button>
+            <button type="button" class="match-count-btn selected" data-mode="bonus">Yes (use bonus)</button>
+            <button type="button" class="match-count-btn" data-mode="normal">No (mathematical score)</button>
           </div>
           <input id="fourKindBonus" type="hidden" value="bonus" />
         </div>
-
-        <div class="mt-4 muted">
-          Bonus table: 1→30, 2→28, 3→27, 4→26, 5→25, 6→24 (or normal sum 4×face).
-        </div>
+        <div class="mt-4 muted">Bonus table: 1→30, 2→28, 3→27, 4→26, 5→25, 6→24 (or normal sum 4×face).</div>
       </div>
 
       <div id="straightFields" class="mt-8" style="display:none;">
@@ -934,35 +409,19 @@
           <option value="success35">Completed straight, take 35</option>
           <option value="fail">Failed (0 points)</option>
         </select>
-        <div class="mt-4 muted">
-          Only valid if the straight was from the first roll using the green die.
-        </div>
+        <div class="mt-4 muted">Only valid if the straight was from the first roll using the green die.</div>
       </div>
 
       <div id="tripleSnakesFields" class="mt-8" style="display:none;">
         <div class="mt-4">
           <label style="display:block; margin-bottom:8px;">Triple Snakes scoring</label>
           <div class="match-count-picker" id="tripleSnakesToggle" style="margin-bottom:6px;">
-            <button
-              type="button"
-              class="match-count-btn selected"
-              data-mode="tieLeader"
-            >
-              Tie Current Leader
-            </button>
-            <button
-              type="button"
-              class="match-count-btn"
-              data-mode="3"
-            >
-              Take 3 points
-            </button>
+            <button type="button" class="match-count-btn selected" data-mode="tieLeader">Tie Current Leader</button>
+            <button type="button" class="match-count-btn" data-mode="3">Take 3 points</button>
           </div>
         </div>
         <input id="tripleSnakesMode" type="hidden" value="tieLeader" />
-        <div class="mt-4 muted" id="tripleSnakesHelp">
-          Tie-the-leader sets this player's total score equal to the current highest score on the board.
-        </div>
+        <div class="mt-4 muted" id="tripleSnakesHelp">Tie-the-leader sets this player's total score equal to the current highest score on the board.</div>
       </div>
 
       <div class="divider"></div>
@@ -983,36 +442,14 @@
       <div class="log" id="logContainer"></div>
     </div>
 
-    <button class="hof-toggle-btn" id="hofToggle">
-      Hall of Fame
-    </button>
+    <button class="hof-toggle-btn" id="hofToggle">Hall of Fame</button>
     <section id="hall-of-fame">
       <h2>Hall of Fame</h2>
       <div class="hof-grid">
-        <div class="hof-card">
-          <h3>Fastest to Victory</h3>
-          <p class="hof-value">5 rounds</p>
-          <p class="hof-holder">Holder: Multiple</p>
-          <p class="hof-date">Date:</p>
-        </div>
-        <div class="hof-card">
-          <h3>Lowest Score Recorded</h3>
-          <p class="hof-value">14 points</p>
-          <p class="hof-holder">Holder: Freddy Porges</p>
-          <p class="hof-date">Date: 2020-11-21</p>
-        </div>
-        <div class="hof-card">
-          <h3>Most 0 Rounds in a Row</h3>
-          <p class="hof-value">6 rounds</p>
-          <p class="hof-holder">Holder: Kyle Dowd</p>
-          <p class="hof-date">Date: 2024-06-21</p>
-        </div>
-        <div class="hof-card">
-          <h3>Highest Losing Score (4+ players)</h3>
-          <p class="hof-value">91</p>
-          <p class="hof-holder">Holder: Freddy Porges</p>
-          <p class="hof-date">Date: 2021-05-14</p>
-        </div>
+        <div class="hof-card"><h3>Fastest to Victory</h3><p class="hof-value">5 rounds</p><p class="hof-holder">Holder: Multiple</p><p class="hof-date">Date:</p></div>
+        <div class="hof-card"><h3>Lowest Score Recorded</h3><p class="hof-value">14 points</p><p class="hof-holder">Holder: Freddy Porges</p><p class="hof-date">Date: 2020-11-21</p></div>
+        <div class="hof-card"><h3>Most 0 Rounds in a Row</h3><p class="hof-value">6 rounds</p><p class="hof-holder">Holder: Kyle Dowd</p><p class="hof-date">Date: 2024-06-21</p></div>
+        <div class="hof-card"><h3>Highest Losing Score (4+ players)</h3><p class="hof-value">91</p><p class="hof-holder">Holder: Freddy Porges</p><p class="hof-date">Date: 2021-05-14</p></div>
       </div>
     </section>
   </main>
@@ -1023,12 +460,110 @@
 </div>
 
 <div id="eventToast" aria-live="polite" aria-atomic="true">
-  <div id="eventToastInner">
-    <span id="eventToastText"></span>
-  </div>
+  <div id="eventToastInner"><span id="eventToastText"></span></div>
 </div>
 
 <script>
+  // Firebase Configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDlvZtuNjL9lSGbac92BMjQQGzQLB0niaQ",
+    authDomain: "triple-snakes.firebaseapp.com",
+    databaseURL: "https://triple-snakes-default-rtdb.firebaseio.com",
+    projectId: "triple-snakes",
+    storageBucket: "triple-snakes.firebasestorage.app",
+    messagingSenderId: "610136499280",
+    appId: "1:610136499280:web:26a385e818aa558abf5d55"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // Room state
+  let currentRoomCode = null;
+  let isViewer = false;
+  let roomRef = null;
+
+  // Generate a random 6-character room code
+  function generateRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+
+  // Sync state to Firebase
+  function syncToFirebase() {
+    if (!currentRoomCode || isViewer) return;
+    const dataToSync = {
+      players: state.players,
+      target: state.target,
+      round: state.round,
+      currentIndex: state.currentIndex,
+      phase: state.phase,
+      winnerId: state.winnerId,
+      roundScores: state.roundScores,
+      lastUpdate: Date.now()
+    };
+    database.ref('rooms/' + currentRoomCode).set(dataToSync);
+  }
+
+  // Listen to Firebase for viewer updates
+  function listenToRoom(roomCode) {
+    roomRef = database.ref('rooms/' + roomCode);
+    roomRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        state.players = data.players || [];
+        state.target = data.target || 100;
+        state.round = data.round || 1;
+        state.currentIndex = data.currentIndex || 0;
+        state.phase = data.phase || 'normal';
+        state.winnerId = data.winnerId || null;
+        state.roundScores = data.roundScores || [];
+        renderScoreboard();
+      }
+    });
+  }
+
+  // Check URL for room code on load
+  function checkUrlForRoom() {
+    const params = new URLSearchParams(window.location.search);
+    const roomCode = params.get('room');
+    if (roomCode) {
+      joinRoom(roomCode.toUpperCase());
+    }
+  }
+
+  // Join a room as viewer
+  function joinRoom(roomCode) {
+    database.ref('rooms/' + roomCode).once('value').then((snapshot) => {
+      if (snapshot.exists()) {
+        currentRoomCode = roomCode;
+        isViewer = true;
+        setupCard.style.display = 'none';
+        scoreCard.style.display = 'block';
+        viewerBanner.style.display = 'block';
+        listenToRoom(roomCode);
+      } else {
+        alert('Room not found. Check the code and try again.');
+      }
+    });
+  }
+
+  // Create a new room
+  function createRoom() {
+    currentRoomCode = generateRoomCode();
+    isViewer = false;
+    roomBanner.style.display = 'block';
+    roomCodeDisplay.textContent = currentRoomCode;
+    const roomUrl = window.location.origin + window.location.pathname + '?room=' + currentRoomCode;
+    roomLinkDisplay.textContent = roomUrl;
+    syncToFirebase();
+  }
+
   const state = {
     players: [],
     target: 100,
@@ -1060,20 +595,22 @@
   const roundByRoundContainer = qs("#roundByRoundContainer");
   const scoreboardTitle = qs("#scoreboardTitle");
   const roundByRoundBtn = qs("#roundByRoundBtn");
-  const endGameBtn = document.getElementById("endGameBtn");
+  const endGameBtn = qs("#endGameBtn");
+  const roomBanner = qs("#roomBanner");
+  const viewerBanner = qs("#viewerBanner");
+  const roomCodeDisplay = qs("#roomCodeDisplay");
+  const roomLinkDisplay = qs("#roomLinkDisplay");
 
-  const hofToggleBtn = document.getElementById("hofToggle");
-  const hofSection = document.getElementById("hall-of-fame");
+  const hofToggleBtn = qs("#hofToggle");
+  const hofSection = qs("#hall-of-fame");
   hofToggleBtn.addEventListener("click", () => {
     const isHidden = hofSection.style.display === "none" || hofSection.style.display === "";
     hofSection.style.display = isHidden ? "block" : "none";
-    if (isHidden) {
-      hofSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (isHidden) hofSection.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  const eventToast = document.getElementById("eventToast");
-  const eventToastText = document.getElementById("eventToastText");
+  const eventToast = qs("#eventToast");
+  const eventToastText = qs("#eventToastText");
   let toastTimeout;
   const toastQueue = [];
   let toastActive = false;
@@ -1095,71 +632,44 @@
     toastTimeout = setTimeout(() => {
       eventToast.style.display = "none";
       toastActive = false;
-      if (toastQueue.length > 0) {
-        const next = toastQueue.shift();
-        startToast(next);
-      }
+      if (toastQueue.length > 0) startToast(toastQueue.shift());
     }, 3000);
   }
 
-  function startToast(message) {
-    toastActive = true;
-    showEventToast(message);
-  }
-
+  function startToast(message) { toastActive = true; showEventToast(message); }
   function queueToast(message) {
     if (!eventToast || !scoreCard) return;
-    if (toastActive) {
-      toastQueue.push(message);
-    } else {
-      startToast(message);
-    }
+    if (toastActive) toastQueue.push(message);
+    else startToast(message);
   }
 
-  window.addEventListener("resize", () => {
-    if (eventToast.style.display === "block") positionEventToast();
-  });
-  window.addEventListener("scroll", () => {
-    if (eventToast.style.display === "block") positionEventToast();
-  });
+  window.addEventListener("resize", () => { if (eventToast.style.display === "block") positionEventToast(); });
+  window.addEventListener("scroll", () => { if (eventToast.style.display === "block") positionEventToast(); });
 
   function renderSetupPlayers() {
     playersSetupList.innerHTML = "";
     state.players.forEach((p, i) => {
       const div = document.createElement("div");
       div.className = "player-row";
-      div.innerHTML = `
-        <div>${p.name}</div>
-        <button class="btn btn-secondary btn-sm" data-remove="${i}">Remove</button>
-      `;
+      div.innerHTML = `<div>${p.name}</div><button class="btn btn-secondary btn-sm" data-remove="${i}">Remove</button>`;
       playersSetupList.appendChild(div);
     });
     playersSetupList.querySelectorAll("[data-remove]").forEach(btn => {
-      btn.onclick = () => {
-        const idx = parseInt(btn.dataset.remove, 10);
-        state.players.splice(idx, 1);
-        renderSetupPlayers();
-      };
+      btn.onclick = () => { state.players.splice(parseInt(btn.dataset.remove, 10), 1); renderSetupPlayers(); };
     });
   }
 
   function getLeaderId() {
     if (state.players.length === 0) return null;
     let best = state.players[0];
-    state.players.forEach(p => {
-      if (p.score > best.score) best = p;
-    });
+    state.players.forEach(p => { if (p.score > best.score) best = p; });
     const leaders = state.players.filter(p => p.score === best.score);
     return leaders.length === 1 ? best.id : null;
   }
 
   function getLeaderScore() {
     if (state.players.length === 0) return 0;
-    let best = state.players[0].score;
-    state.players.forEach(p => {
-      if (p.score > best) best = p.score;
-    });
-    return best;
+    return Math.max(...state.players.map(p => p.score));
   }
 
   function renderScoreboardNormal() {
@@ -1169,15 +679,7 @@
       const div = document.createElement("div");
       div.className = "player-row" + (i === state.currentIndex ? " current-turn" : "");
       const scoreClass = "score" + (p.id === leaderId ? " leader" : "");
-      div.innerHTML = `
-        <div class="player-main">
-          <span>${p.name}</span>
-          ${p.id === state.winnerId ? '<span class="pill-warning">Winner</span>' : ""}
-        </div>
-        <div>
-          <span class="${scoreClass}">${p.score}</span>
-        </div>
-      `;
+      div.innerHTML = `<div class="player-main"><span>${p.name}</span>${p.id === state.winnerId ? '<span class="pill-warning">Winner</span>' : ""}</div><div><span class="${scoreClass}">${p.score}</span></div>`;
       playersList.appendChild(div);
     });
     playersList.style.display = "flex";
@@ -1188,38 +690,26 @@
   }
 
   function renderScoreboardRoundByRound() {
-    const maxRound = state.roundScores.length
-      ? Math.max(...state.roundScores.map(r => r.round))
-      : state.round - 1;
+    const maxRound = state.roundScores.length ? Math.max(...state.roundScores.map(r => r.round)) : state.round - 1;
     if (maxRound <= 0) {
       roundByRoundContainer.innerHTML = "<div class='muted'>No completed rounds yet.</div>";
     } else {
       const roundMap = {};
-      state.roundScores.forEach(r => {
-        roundMap[r.round] = r.scores;
-      });
-
-      let html = "<table class='round-table'><thead><tr>";
-      html += "<th>Player</th>";
-      for (let r = 1; r <= maxRound; r++) {
-        html += `<th>R${r}</th>`;
-      }
+      state.roundScores.forEach(r => { roundMap[r.round] = r.scores; });
+      let html = "<table class='round-table'><thead><tr><th>Player</th>";
+      for (let r = 1; r <= maxRound; r++) html += `<th>R${r}</th>`;
       html += "</tr></thead><tbody>";
-
       state.players.forEach(p => {
         html += `<tr><td class="player-name">${p.name}</td>`;
         for (let r = 1; r <= maxRound; r++) {
-          const scoresForRound = roundMap[r] || {};
-          const val = scoresForRound[p.id];
+          const val = (roundMap[r] || {})[p.id];
           html += `<td>${typeof val === "number" ? val : "-"}</td>`;
         }
         html += "</tr>";
       });
-
       html += "</tbody></table>";
       roundByRoundContainer.innerHTML = html;
     }
-
     playersList.style.display = "none";
     roundByRoundContainer.style.display = "block";
     scoreboardTitle.textContent = "Round by Round Scores";
@@ -1228,19 +718,10 @@
   }
 
   function renderScoreboard() {
-    if (state.showRoundByRound) {
-      renderScoreboardRoundByRound();
-    } else {
-      renderScoreboardNormal();
-    }
+    if (state.showRoundByRound) renderScoreboardRoundByRound();
+    else renderScoreboardNormal();
     roundChip.textContent = `Round ${state.round}`;
-    const phaseText = {
-      normal: "Normal play",
-      rebuttal: "Rebuttal round",
-      winRollOff: "Winner roll-off",
-      lastRollOff: "Last-place roll-off"
-    }[state.phase];
-    phaseChip.textContent = phaseText;
+    phaseChip.textContent = { normal: "Normal play", rebuttal: "Rebuttal round", winRollOff: "Winner roll-off", lastRollOff: "Last-place roll-off" }[state.phase];
     const currentPlayer = state.players[state.currentIndex];
     turnPlayerPill.textContent = currentPlayer ? currentPlayer.name : "Player ?";
     targetScoreLabel.textContent = state.target;
@@ -1250,30 +731,21 @@
     const div = document.createElement("div");
     div.className = "log-entry";
     let badge = "";
-    if (type === "drink") {
-      badge = ' <span class="pill pill-warning">Drink</span>';
-    } else if (type === "social") {
-      badge = ' <span class="pill pill-danger">Social</span>';
-    } else if (type === "system") {
-      badge = ' <span class="pill">Game</span>';
-      div.classList.add("system-message");
-    }
+    if (type === "drink") badge = ' <span class="pill pill-warning">Drink</span>';
+    else if (type === "social") badge = ' <span class="pill pill-danger">Social</span>';
+    else if (type === "system") { badge = ' <span class="pill">Game</span>'; div.classList.add("system-message"); }
     div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>${badge} – ${msg}`;
     logContainer.prepend(div);
   }
 
   function snapshotRoundTotals() {
     const scores = {};
-    state.players.forEach(p => {
-      scores[p.id] = p.score;
-    });
+    state.players.forEach(p => { scores[p.id] = p.score; });
     state.roundScores = state.roundScores.filter(r => r.round !== state.round);
     state.roundScores.push({ round: state.round, scores });
   }
 
-  function getCompletedRoundsCount() {
-    return state.roundScores.length;
-  }
+  function getCompletedRoundsCount() { return state.roundScores.length; }
 
   function advanceTurn() {
     state.currentIndex++;
@@ -1284,7 +756,6 @@
       state.round++;
       state.turnsThisRound = 0;
       state.consecutiveZeroTurnsInRound = 0;
-
       if (state.round === 4) {
         const msg = "Start of Round 4 -- Ties and Lead Change Drinks Now in Effect";
         addLog(msg, "system");
@@ -1292,16 +763,14 @@
       }
     }
     renderScoreboard();
+    syncToFirebase();
   }
 
   function applyScore(player, delta) {
     const before = player.score;
     let after = before + delta;
     let bust = false;
-    if (after > state.target && state.phase !== "winRollOff" && state.phase !== "lastRollOff") {
-      bust = true;
-      after = 77;
-    }
+    if (after > state.target && state.phase !== "winRollOff" && state.phase !== "lastRollOff") { bust = true; after = 77; }
     player.score = after;
     return { before, after, bust };
   }
@@ -1316,7 +785,6 @@
         addLog(msg, "drink");
         queueToast(msg);
       }
-
       const leaderId = getLeaderId();
       if (leaderId && leaderId !== state.lastLeaderId) {
         const leader = state.players.find(p => p.id === leaderId);
@@ -1357,20 +825,17 @@
         const tiesAt100 = state.players.filter(p => p.score === state.target);
         if (tiesAt100.length > 1) {
           state.phase = "winRollOff";
-          const msg = "Multiple players tied at 100 after rebuttal. Winner roll-off begins.";
-          addLog(msg, "system");
+          addLog("Multiple players tied at 100 after rebuttal. Winner roll-off begins.", "system");
           queueToast("Winner roll-off begins!");
         } else {
           const minScore = Math.min(...state.players.map(p => p.score));
           const lastPlace = state.players.filter(p => p.score === minScore);
           if (lastPlace.length > 1) {
             state.phase = "lastRollOff";
-            const msg = `Multiple players tied for last at ${minScore}. Last-place roll-off begins.`;
-            addLog(msg, "system");
+            addLog(`Multiple players tied for last at ${minScore}. Last-place roll-off begins.`, "system");
             queueToast("Last-place roll-off begins!");
           } else {
-            const msg = `${winner.name} wins the game. Last-place is ${lastPlace[0].name}.`;
-            addLog(msg, "system");
+            addLog(`${winner.name} wins the game. Last-place is ${lastPlace[0].name}.`, "system");
             queueToast(`${winner.name} wins! ${lastPlace[0].name} is last.`);
           }
         }
@@ -1378,113 +843,63 @@
     } else if (state.phase === "winRollOff") {
       const tieGroup = state.players.filter(p => p.score === state.target);
       if (tieGroup.length === 1) {
-        const msg = `${tieGroup[0].name} wins the winner roll-off.`;
-        addLog(msg, "system");
-        queueToast(msg);
+        addLog(`${tieGroup[0].name} wins the winner roll-off.`, "system");
+        queueToast(`${tieGroup[0].name} wins the winner roll-off.`);
       }
     } else if (state.phase === "lastRollOff") {
       const minScore = Math.min(...state.players.map(p => p.score));
       const last = state.players.filter(p => p.score === minScore);
       if (last.length === 1) {
-        const msg = `${last[0].name} loses the last-place roll-off.`;
-        addLog(msg, "system");
-        queueToast(msg);
+        addLog(`${last[0].name} loses the last-place roll-off.`, "system");
+        queueToast(`${last[0].name} loses the last-place roll-off.`);
       }
     }
   }
 
   function computeTurnScore() {
     const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
-    let score = 0;
-    let events = [];
-
-    if (outcomeType === "zeroPoints") {
-      return { score: 0, events };
-    }
-
-    if (outcomeType === "bust77") {
-      return { score: 77, events: ["bustTo77"] };
-    }
-
+    let score = 0, events = [];
+    if (outcomeType === "zeroPoints") return { score: 0, events };
+    if (outcomeType === "bust77") return { score: 77, events: ["bustTo77"] };
     if (outcomeType === "tripleSnakes") {
       const mode = qs("#tripleSnakesMode").value;
-      if (mode === "3") {
-        return { score: 3, events: ["tripleSnakesTurn"] };
-      } else {
-        const leaderScore = getLeaderScore();
-        return { score: leaderScore, events: ["tripleSnakesTieLeader"] };
-      }
+      return mode === "3" ? { score: 3, events: ["tripleSnakesTurn"] } : { score: getLeaderScore(), events: ["tripleSnakesTieLeader"] };
     }
-
     if (outcomeType === "match") {
-      const f1 = parseInt(qs("#matchFace1").value, 10);
-      const c1 = parseInt(qs("#matchCount1").value, 10);
-      const f2 = parseInt(qs("#matchFace2").value, 10);
-      const c2 = parseInt(qs("#matchCount2").value, 10);
-
-      if (!isNaN(f1) && !isNaN(c1)) {
-        score += f1 * c1;
-      }
-      if (!isNaN(f2) && !isNaN(c2)) {
-        score += f2 * c2;
-      }
+      const f1 = parseInt(qs("#matchFace1").value, 10), c1 = parseInt(qs("#matchCount1").value, 10);
+      const f2 = parseInt(qs("#matchFace2").value, 10), c2 = parseInt(qs("#matchCount2").value, 10);
+      if (!isNaN(f1) && !isNaN(c1)) score += f1 * c1;
+      if (!isNaN(f2) && !isNaN(c2)) score += f2 * c2;
       return { score: score || 0, events };
     }
-
     if (outcomeType === "doubleDouble") {
-      const p1 = parseInt(qs("#ddPair1Face").value, 10);
-      const p2 = parseInt(qs("#ddPair2Face").value, 10);
+      const p1 = parseInt(qs("#ddPair1Face").value, 10), p2 = parseInt(qs("#ddPair2Face").value, 10);
       if (isNaN(p1) || isNaN(p2)) return { score: 0, events };
-      const s = p1 * 2 + p2 * 2;
-      return { score: s, events };
+      return { score: p1 * 2 + p2 * 2, events };
     }
-
     if (outcomeType === "fourKind") {
       const face = parseInt(qs("#fourKindFace").value, 10);
       if (isNaN(face)) return { score: 0, events };
       const mode = qs("#fourKindBonus").value;
-      const normal = 4 * face;
-      const bonus = face === 1 ? 30 : (30 - face);
-      let chosen = normal;
-      if (mode === "bonus") chosen = bonus;
-      else if (mode === "normal") chosen = normal;
-      else chosen = Math.max(normal, bonus);
+      const normal = 4 * face, bonus = face === 1 ? 30 : (30 - face);
       events.push("fourKind");
-      return { score: chosen, events };
+      return { score: mode === "bonus" ? bonus : normal, events };
     }
-
     if (outcomeType === "straight") {
       const res = qs("#straightResult").value;
-      if (res === "fail") {
-        return { score: 0, events: ["straightFail"] };
-      } else if (res === "success34") {
-        return { score: 34, events: ["straightSuccess"] };
-      } else {
-        return { score: 35, events: ["straightSuccess"] };
-      }
+      if (res === "fail") return { score: 0, events: ["straightFail"] };
+      return { score: res === "success34" ? 34 : 35, events: ["straightSuccess"] };
     }
-
     return { score: 0, events };
   }
 
   function updateOutcomeFields() {
     const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
-    const blocks = {
-      match: qs("#matchFields"),
-      doubleDouble: qs("#doubleDoubleFields"),
-      fourKind: qs("#fourKindFields"),
-      straight: qs("#straightFields"),
-      tripleSnakes: qs("#tripleSnakesFields"),
-      zeroPoints: null,
-      bust77: null
-    };
-    qs("#matchFields").style.display = "none";
-    qs("#doubleDoubleFields").style.display = "none";
-    qs("#fourKindFields").style.display = "none";
-    qs("#straightFields").style.display = "none";
-    qs("#tripleSnakesFields").style.display = "none";
-    if (blocks[outcomeType]) blocks[outcomeType].style.display = "block";
-
+    qs("#matchFields").style.display = outcomeType === "match" ? "block" : "none";
+    qs("#doubleDoubleFields").style.display = outcomeType === "doubleDouble" ? "block" : "none";
+    qs("#fourKindFields").style.display = outcomeType === "fourKind" ? "block" : "none";
+    qs("#straightFields").style.display = outcomeType === "straight" ? "block" : "none";
+    qs("#tripleSnakesFields").style.display = outcomeType === "tripleSnakes" ? "block" : "none";
     const hints = {
       match: "Use for two-of-a-kind and three-of-a-kind matched dice.",
       doubleDouble: "Use when two different matching pairs are made on the final roll.",
@@ -1499,313 +914,222 @@
 
   qs("#outcomeTypeGroup").addEventListener("change", (e) => {
     if (e.target.name === "outcomeType") {
-      document.querySelectorAll("#outcomeTypeGroup .radio-pill").forEach(l => {
-        l.classList.remove("selected");
-      });
+      document.querySelectorAll("#outcomeTypeGroup .radio-pill").forEach(l => l.classList.remove("selected"));
       e.target.closest(".radio-pill").classList.add("selected");
       updateOutcomeFields();
     }
   });
 
-  const tripleSnakesHelp = document.getElementById("tripleSnakesHelp");
   document.querySelectorAll("#tripleSnakesToggle .match-count-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#tripleSnakesToggle .match-count-btn")
-        .forEach(b => b.classList.remove("selected"));
+      document.querySelectorAll("#tripleSnakesToggle .match-count-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
       qs("#tripleSnakesMode").value = btn.dataset.mode;
-
-      if (btn.dataset.mode === "tieLeader") {
-        tripleSnakesHelp.textContent =
-          "Tie-the-leader sets this player's total score equal to the current highest score on the board.";
-      } else {
-        tripleSnakesHelp.textContent =
-          "The player can select 3 points if its a better outcome for their game.";
-      }
+      qs("#tripleSnakesHelp").textContent = btn.dataset.mode === "tieLeader"
+        ? "Tie-the-leader sets this player's total score equal to the current highest score on the board."
+        : "The player can select 3 points if its a better outcome for their game.";
     });
   });
 
   document.querySelectorAll("#fourKindBonusGroup .match-count-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#fourKindBonusGroup .match-count-btn")
-        .forEach(b => b.classList.remove("selected"));
+      document.querySelectorAll("#fourKindBonusGroup .match-count-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
       qs("#fourKindBonus").value = btn.dataset.mode;
     });
   });
 
   function resetToHome() {
-    state.players = [];
-    state.target = 100;
-    state.round = 1;
-    state.currentIndex = 0;
-    state.started = false;
-    state.phase = "normal";
-    state.winnerId = null;
-    state.consecutiveZeroTurnsInRound = 0;
-    state.turnsThisRound = 0;
-    state.lastLeaderId = null;
-    state.roundScores = [];
-    state.showRoundByRound = false;
+    state.players = []; state.target = 100; state.round = 1; state.currentIndex = 0;
+    state.started = false; state.phase = "normal"; state.winnerId = null;
+    state.consecutiveZeroTurnsInRound = 0; state.turnsThisRound = 0;
+    state.lastLeaderId = null; state.roundScores = []; state.showRoundByRound = false;
     logContainer.innerHTML = "";
     setupCard.style.display = "block";
     scoreCard.style.display = "none";
     turnCard.style.display = "none";
     logCard.style.display = "none";
     qs("#editScoreWrapper").style.display = "none";
+    roomBanner.style.display = "none";
+    viewerBanner.style.display = "none";
+    currentRoomCode = null;
+    isViewer = false;
+    if (roomRef) { roomRef.off(); roomRef = null; }
+    window.history.replaceState({}, '', window.location.pathname);
     renderSetupPlayers();
   }
 
-  const addPlayerBtn = qs("#addPlayerBtn");
-  const resetGameBtn = qs("#resetGameBtn");
-  const startGameBtn = qs("#startGameBtn");
-
-  addPlayerBtn.onclick = () => {
+  qs("#addPlayerBtn").onclick = () => {
     const name = qs("#playerName").value.trim();
     if (!name) return;
-    state.players.push({
-      id: 'p-' + Math.random().toString(16).slice(2) + Date.now().toString(16),
-      name,
-      score: 0
-    });
+    state.players.push({ id: 'p-' + Math.random().toString(16).slice(2) + Date.now().toString(16), name, score: 0 });
     qs("#playerName").value = "";
     renderSetupPlayers();
   };
 
-  resetGameBtn.onclick = resetToHome;
-  endGameBtn.onclick = resetToHome;
+  qs("#resetGameBtn").onclick = resetToHome;
+  endGameBtn.onclick = () => {
+    if (currentRoomCode && !isViewer) database.ref('rooms/' + currentRoomCode).remove();
+    resetToHome();
+  };
 
-  startGameBtn.onclick = () => {
-    if (state.players.length < 2) {
-      alert("Add at least 2 players.");
-      return;
-    }
-    state.round = 1;
-    state.currentIndex = 0;
-    state.started = true;
-    state.phase = "normal";
-    state.winnerId = null;
-    state.consecutiveZeroTurnsInRound = 0;
-    state.turnsThisRound = 0;
-    state.lastLeaderId = null;
-    state.roundScores = [];
-    state.showRoundByRound = false;
+  qs("#startGameBtn").onclick = () => {
+    if (state.players.length < 2) { alert("Add at least 2 players."); return; }
+    state.round = 1; state.currentIndex = 0; state.started = true; state.phase = "normal";
+    state.winnerId = null; state.consecutiveZeroTurnsInRound = 0; state.turnsThisRound = 0;
+    state.lastLeaderId = null; state.roundScores = []; state.showRoundByRound = false;
     setupCard.style.display = "none";
     scoreCard.style.display = "block";
     turnCard.style.display = "block";
     logCard.style.display = "block";
     qs("#editScoreWrapper").style.display = "block";
-    const msg = "Game started. First player begins at Round 1.";
-    addLog(msg, "system");
+    addLog("Game started. First player begins at Round 1.", "system");
     queueToast("Game started – Round 1.");
     updateOutcomeFields();
     renderScoreboard();
+    createRoom();
   };
 
   qs("#skipTurnBtn").onclick = () => {
     const p = state.players[state.currentIndex];
-    const msg = `${p.name}'s turn skipped.`;
-    addLog(msg, "system");
-    queueToast(msg);
+    addLog(`${p.name}'s turn skipped.`, "system");
+    queueToast(`${p.name}'s turn skipped.`);
     advanceTurn();
   };
 
-  roundByRoundBtn.onclick = () => {
-    state.showRoundByRound = !state.showRoundByRound;
-    renderScoreboard();
-  };
+  roundByRoundBtn.onclick = () => { state.showRoundByRound = !state.showRoundByRound; renderScoreboard(); };
 
   qs("#submitTurnBtn").onclick = () => {
     const p = state.players[state.currentIndex];
     const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
-
     const res = computeTurnScore();
     let turnScore = res.score;
     const events = res.events;
-
-    let before = p.score;
-    let after = p.score;
+    let before = p.score, after = p.score;
 
     if (outcomeType === "bust77") {
-      before = p.score;
-      after = 77;
-      p.score = 77;
-      const msg = `${p.name} selected Bust (77): score set from ${before} to 77.`;
-      addLog(msg, "drink");
+      before = p.score; after = 77; p.score = 77;
+      addLog(`${p.name} selected Bust (77): score set from ${before} to 77.`, "drink");
       queueToast(`${p.name} busts to 77. Drink!`);
       state.consecutiveZeroTurnsInRound = 0;
     } else if (outcomeType === "tripleSnakes") {
       const mode = qs("#tripleSnakesMode").value;
-      const leaderScore = getLeaderScore();
       before = p.score;
       if (mode === "3") {
-        after = before + 3;
-        p.score = after;
-        const msg = `${p.name} chose Triple Snakes for 3 points (from ${before} to ${after}).`;
-        addLog(msg, "social");
+        after = before + 3; p.score = after;
+        addLog(`${p.name} chose Triple Snakes for 3 points (from ${before} to ${after}).`, "social");
         queueToast(`Triple Snakes! ${p.name} scores +3 and calls a social.`);
       } else {
-        after = leaderScore;
-        p.score = after;
-        const msg = `${p.name} used Triple Snakes to tie the leader at ${after}.`;
-        addLog(msg, "social");
+        after = getLeaderScore(); p.score = after;
+        addLog(`${p.name} used Triple Snakes to tie the leader at ${after}.`, "social");
         queueToast(`Triple Snakes! ${p.name} ties the leader at ${after}. Social drink!`);
       }
       state.consecutiveZeroTurnsInRound = 0;
     } else {
       if (turnScore === 0) {
         state.consecutiveZeroTurnsInRound++;
-        const zeroMsg = `${p.name} scored 0 this turn.`;
-        addLog(zeroMsg, "drink");
+        addLog(`${p.name} scored 0 this turn.`, "drink");
         queueToast(`${p.name} drinks – 0 points.`);
-      } else {
-        state.consecutiveZeroTurnsInRound = 0;
-      }
+      } else state.consecutiveZeroTurnsInRound = 0;
       checkZeroRoundGroupDrink();
-
       const result = applyScore(p, turnScore);
-      before = result.before;
-      after = result.after;
-
-      if (result.bust && (state.phase === "normal" || state.phase === "rebuttal")) {
-        const msg = `${p.name} busted over ${state.target} and resets to 77. Drinks.`;
-        addLog(msg, "drink");
+      before = result.before; after = result.after;
+      if (result.bust) {
+        addLog(`${p.name} busted over ${state.target} and resets to 77. Drinks.`, "drink");
         queueToast(`${p.name} busts! Reset to 77 and drink.`);
       }
-
-      if (turnScore === 0) {
-        const baseMsg = `${p.name} scored 0 (remains at ${after}).`;
-        addLog(baseMsg, "info");
-      } else {
-        const baseMsg = `${p.name} scored ${turnScore} (from ${before} to ${after}).`;
-        addLog(baseMsg, "info");
-      }
+      addLog(turnScore === 0 ? `${p.name} scored 0 (remains at ${after}).` : `${p.name} scored ${turnScore} (from ${before} to ${after}).`, "info");
     }
 
-    if (events.includes("tripleSnakes")) {
-      const msg = `${p.name} rolled Triple Snakes (three 1s). Social drink.`;
-      addLog(msg, "social");
-      queueToast(`Triple Snakes! ${p.name} calls a social.`);
-    }
-    if (events.includes("fourKind")) {
-      const msg = `${p.name} rolled four-of-a-kind. Social drink.`;
-      addLog(msg, "social");
-      queueToast(`Four-of-a-kind! Social drink.`);
-    }
-    if (events.includes("straightSuccess")) {
-      const msg = `${p.name} completed the straight via green die.`;
-      addLog(msg, "info");
-      queueToast(`Straight! ${p.name} scores big.`);
-    }
-    if (events.includes("straightFail")) {
-      const msg = `${p.name} failed to complete the straight and scored 0.`;
-      addLog(msg, "drink");
-      queueToast(`${p.name} drinks – straight failed.`);
-    }
-    if (events.includes("snakeEyes")) {
-      const msg = `${p.name} rolled snake eyes and ends the turn with 0.`;
-      addLog(msg, "drink");
-      queueToast(`Snake eyes! ${p.name} drinks.`);
-    }
+    if (events.includes("fourKind")) { addLog(`${p.name} rolled four-of-a-kind. Social drink.`, "social"); queueToast("Four-of-a-kind! Social drink."); }
+    if (events.includes("straightSuccess")) { addLog(`${p.name} completed the straight via green die.`, "info"); queueToast(`Straight! ${p.name} scores big.`); }
+    if (events.includes("straightFail")) { addLog(`${p.name} failed to complete the straight and scored 0.`, "drink"); queueToast(`${p.name} drinks – straight failed.`); }
 
     handleLeaderAndTies(p);
     evaluateWinState(p);
-
     state.showRoundByRound = false;
     advanceTurn();
   };
 
   qs("#editScoreBtn").onclick = () => {
     if (state.players.length === 0) return;
-
-    const names = state.players
-      .map((p, idx) => `${idx + 1}: ${p.name} (${p.score})`)
-      .join("\n");
-    const which = prompt(
-      "Edit which player? Enter the number:\n\n" + names
-    );
+    const names = state.players.map((p, idx) => `${idx + 1}: ${p.name} (${p.score})`).join("\n");
+    const which = prompt("Edit which player? Enter the number:\n\n" + names);
     if (!which) return;
-
     const idx = parseInt(which, 10) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= state.players.length) {
-      alert("Invalid player number.");
-      return;
-    }
-
+    if (isNaN(idx) || idx < 0 || idx >= state.players.length) { alert("Invalid player number."); return; }
     const player = state.players[idx];
-    const newScoreStr = prompt(
-      `New total score for ${player.name}? (current: ${player.score})`
-    );
+    const newScoreStr = prompt(`New total score for ${player.name}? (current: ${player.score})`);
     if (newScoreStr === null || newScoreStr === "") return;
-
     const newScore = parseInt(newScoreStr, 10);
-    if (isNaN(newScore) || newScore < 0) {
-      alert("Please enter a valid non-negative number.");
-      return;
-    }
-
+    if (isNaN(newScore) || newScore < 0) { alert("Please enter a valid non-negative number."); return; }
     const oldScore = player.score;
     player.score = newScore;
-
-    const msg = `Score edited for ${player.name}: ${oldScore} → ${newScore}.`;
-    addLog(msg, "system");
+    addLog(`Score edited for ${player.name}: ${oldScore} → ${newScore}.`, "system");
     queueToast(`Score edited: ${player.name} is now at ${newScore}.`);
-
     renderScoreboard();
+    syncToFirebase();
   };
-
-  const matchFaceInput = qs("#matchFace1");
-  const matchCountInput = qs("#matchCount1");
 
   document.querySelectorAll("#matchDicePicker .die-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#matchDicePicker .die-btn")
-        .forEach(b => b.classList.remove("selected"));
+      document.querySelectorAll("#matchDicePicker .die-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
-      matchFaceInput.value = btn.dataset.face;
+      qs("#matchFace1").value = btn.dataset.face;
     });
   });
 
   document.querySelectorAll("#matchCountPicker .match-count-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#matchCountPicker .match-count-btn")
-        .forEach(b => b.classList.remove("selected"));
+      document.querySelectorAll("#matchCountPicker .match-count-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
-      matchCountInput.value = btn.dataset.count;
+      qs("#matchCount1").value = btn.dataset.count;
     });
   });
-
-  const fourKindFaceInput = qs("#fourKindFace");
 
   document.querySelectorAll("#fourKindDicePicker .die-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#fourKindDicePicker .die-btn")
-        .forEach(b => b.classList.remove("selected"));
+      document.querySelectorAll("#fourKindDicePicker .die-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
-      fourKindFaceInput.value = btn.dataset.face;
+      qs("#fourKindFace").value = btn.dataset.face;
     });
   });
 
-  const ddPair1FaceInput = qs("#ddPair1Face");
-  const ddPair2FaceInput = qs("#ddPair2Face");
-
   document.querySelectorAll("#ddPair1Picker .die-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#ddPair1Picker .die-btn")
-        .forEach(b => b.classList.remove("selected"));
+      document.querySelectorAll("#ddPair1Picker .die-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
-      ddPair1FaceInput.value = btn.dataset.face;
+      qs("#ddPair1Face").value = btn.dataset.face;
     });
   });
 
   document.querySelectorAll("#ddPair2Picker .die-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#ddPair2Picker .die-btn")
-        .forEach(b => b.classList.remove("selected"));
+      document.querySelectorAll("#ddPair2Picker .die-btn").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
-      ddPair2FaceInput.value = btn.dataset.face;
+      qs("#ddPair2Face").value = btn.dataset.face;
     });
   });
+
+  // Copy link button
+  qs("#copyLinkBtn").onclick = () => {
+    const url = window.location.origin + window.location.pathname + '?room=' + currentRoomCode;
+    navigator.clipboard.writeText(url).then(() => {
+      queueToast("Link copied to clipboard!");
+    }).catch(() => {
+      prompt("Copy this link:", url);
+    });
+  };
+
+  // Join room button
+  qs("#joinRoomBtn").onclick = () => {
+    const code = qs("#joinRoomCode").value.trim().toUpperCase();
+    if (code.length !== 6) { alert("Please enter a 6-character room code."); return; }
+    joinRoom(code);
+  };
+
+  // Check URL on page load
+  checkUrlForRoom();
 </script>
 </body>
 </html>
