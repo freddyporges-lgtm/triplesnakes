@@ -300,6 +300,10 @@
       <div class="scoreboard-body">
         <div class="players-list scoreboard-players" id="playersList"></div>
         <div id="roundByRoundContainer" style="display:none;" class="round-table-wrapper"></div>
+        <div id="rollOffSetupControls" style="display:none; margin-top: 10px; text-align: center;">
+          <div class="muted" style="margin-bottom: 8px;">Use ▲▼ arrows to set the roll-off order. #1 rolls first.</div>
+          <button class="btn" id="startRollOffBtn">Start Roll-Off</button>
+        </div>
       </div>
     </div>
 
@@ -450,8 +454,8 @@
     <section id="hall-of-fame">
       <h2>Hall of Fame</h2>
       <div class="hof-grid">
-        <div class="hof-card"><h3>Fastest to Victory</h3><p class="hof-value">5 rounds</p><p class="hof-holder">Holder: Multiple</p><p class="hof-date">Date:</p></div>
-        <div class="hof-card"><h3>Lowest Score Recorded</h3><p class="hof-value">14 points</p><p class="hof-holder">Holder: Freddy Porges</p><p class="hof-date">Date: 2020-11-21</p></div>
+        <div class="hof-card"><h3>Fastest to Victory</h3><p class="hof-value">5 rounds</p><p class="hof-holder">Holder: Multiple</p></div>
+        <div class="hof-card"><h3>Lowest Score Recorded</h3><p class="hof-value">12 points</p><p class="hof-holder">Holder: Leah Dowd</p><p class="hof-date">Date: 2025-12-31</p></div>
         <div class="hof-card"><h3>Most 0 Rounds in a Row</h3><p class="hof-value">6 rounds</p><p class="hof-holder">Holder: Kyle Dowd</p><p class="hof-date">Date: 2024-06-21</p></div>
         <div class="hof-card"><h3>Highest Losing Score (4+ players)</h3><p class="hof-value">91</p><p class="hof-holder">Holder: Freddy Porges</p><p class="hof-date">Date: 2021-05-14</p></div>
       </div>
@@ -465,6 +469,24 @@
 
 <div id="eventToast" aria-live="polite" aria-atomic="true">
   <div id="eventToastInner"><span id="eventToastText"></span></div>
+</div>
+
+<div id="gameOverBanner" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:3000; display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+  <div style="background: radial-gradient(circle at top, #0a1f28, #020509 70%); border-radius:20px; border:3px solid var(--accent); box-shadow: 0 0 40px rgba(29,214,143,0.3); padding:30px 40px; text-align:center; max-width:400px; width:90%;">
+    <div style="font-size:3rem; margin-bottom:10px;">🏆</div>
+    <div style="font-size:1.5rem; font-weight:800; color:var(--accent); margin-bottom:5px;">GAME OVER</div>
+    <div style="height:2px; background:linear-gradient(90deg, transparent, var(--accent), transparent); margin:15px 0;"></div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;">Ultimate Winner</div>
+      <div id="gameOverWinner" style="font-size:1.8rem; font-weight:700; color:var(--accent); margin-top:5px;">-</div>
+    </div>
+    <div style="margin-bottom:25px;">
+      <div style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;">Takes the Shot 🥃</div>
+      <div id="gameOverLoser" style="font-size:1.8rem; font-weight:700; color:var(--danger); margin-top:5px;">-</div>
+    </div>
+    <button class="btn" id="closeGameOverBtn" style="width:100%;">View Final Scores</button>
+    <button class="btn btn-secondary mt-8" id="newGameBtn" style="width:100%;">New Game</button>
+  </div>
 </div>
 
 <script>
@@ -508,7 +530,16 @@
       currentIndex: state.currentIndex,
       phase: state.phase,
       winnerId: state.winnerId,
+      ultimateWinnerId: state.ultimateWinnerId,
+      loserId: state.loserId,
+      gameComplete: state.gameComplete,
       roundScores: state.roundScores,
+      rebuttalTurnsTaken: state.rebuttalTurnsTaken,
+      rebuttalHit100Order: state.rebuttalHit100Order,
+      rollOffPlayerIds: state.rollOffPlayerIds,
+      rollOffIndex: state.rollOffIndex,
+      rollOffSetupMode: state.rollOffSetupMode,
+      rollOffRoundComplete: state.rollOffRoundComplete,
       lastUpdate: Date.now()
     };
     database.ref('rooms/' + currentRoomCode).set(dataToSync);
@@ -526,8 +557,22 @@
         state.currentIndex = data.currentIndex || 0;
         state.phase = data.phase || 'normal';
         state.winnerId = data.winnerId || null;
+        state.ultimateWinnerId = data.ultimateWinnerId || null;
+        state.loserId = data.loserId || null;
+        state.gameComplete = data.gameComplete || false;
         state.roundScores = data.roundScores || [];
+        state.rebuttalTurnsTaken = data.rebuttalTurnsTaken || 0;
+        state.rebuttalHit100Order = data.rebuttalHit100Order || [];
+        state.rollOffPlayerIds = data.rollOffPlayerIds || [];
+        state.rollOffIndex = data.rollOffIndex || 0;
+        state.rollOffSetupMode = data.rollOffSetupMode || false;
+        state.rollOffRoundComplete = data.rollOffRoundComplete || false;
         renderScoreboard();
+        
+        // Show game over banner for viewers too
+        if (state.gameComplete && state.ultimateWinnerId && state.loserId) {
+          showGameOverBanner();
+        }
       }
     });
   }
@@ -576,11 +621,20 @@
     started: false,
     phase: "normal",
     winnerId: null,
+    ultimateWinnerId: null,
+    loserId: null,
+    gameComplete: false,
     consecutiveZeroTurnsInRound: 0,
     turnsThisRound: 0,
     lastLeaderId: null,
     roundScores: [],
-    showRoundByRound: false
+    showRoundByRound: false,
+    rebuttalTurnsTaken: 0,
+    rebuttalHit100Order: [],
+    rollOffPlayerIds: [],
+    rollOffIndex: 0,
+    rollOffSetupMode: false,
+    rollOffRoundComplete: false
   };
 
   const qs = (sel) => document.querySelector(sel);
@@ -646,6 +700,30 @@
     if (toastActive) toastQueue.push(message);
     else startToast(message);
   }
+  
+  function showGameOverBanner() {
+    const gameOverBanner = qs("#gameOverBanner");
+    const winnerEl = qs("#gameOverWinner");
+    const loserEl = qs("#gameOverLoser");
+    const newGameBtn = qs("#newGameBtn");
+    
+    const winner = state.players.find(p => p.id === state.ultimateWinnerId);
+    const loser = state.players.find(p => p.id === state.loserId);
+    
+    winnerEl.textContent = winner ? winner.name : "-";
+    loserEl.textContent = loser ? loser.name : "-";
+    
+    // Hide new game button for viewers
+    newGameBtn.style.display = isViewer ? "none" : "block";
+    
+    gameOverBanner.style.display = "flex";
+    syncToFirebase();
+  }
+  
+  function hideGameOverBanner() {
+    const gameOverBanner = qs("#gameOverBanner");
+    gameOverBanner.style.display = "none";
+  }
 
   window.addEventListener("resize", () => { if (eventToast.style.display === "block") positionEventToast(); });
   window.addEventListener("scroll", () => { if (eventToast.style.display === "block") positionEventToast(); });
@@ -679,18 +757,115 @@
   function renderScoreboardNormal() {
     playersList.innerHTML = "";
     const leaderId = getLeaderId();
-    state.players.forEach((p, i) => {
+    const inRollOff = state.phase === "winRollOff" || state.phase === "lastRollOff";
+    
+    // During roll-offs, show players in roll-off order
+    let playersToShow = state.players;
+    if (inRollOff && state.rollOffPlayerIds.length > 0) {
+      // Show roll-off players first in their order, then others
+      const rollOffPlayers = state.rollOffPlayerIds.map(id => state.players.find(p => p.id === id)).filter(Boolean);
+      const otherPlayers = state.players.filter(p => !state.rollOffPlayerIds.includes(p.id));
+      playersToShow = [...rollOffPlayers, ...otherPlayers];
+    }
+    
+    playersToShow.forEach((p, displayIndex) => {
       const div = document.createElement("div");
-      div.className = "player-row" + (i === state.currentIndex ? " current-turn" : "");
+      const isInRollOff = inRollOff && state.rollOffPlayerIds.includes(p.id);
+      const rollOffPosition = isInRollOff ? state.rollOffPlayerIds.indexOf(p.id) : -1;
+      const currentRollOffPlayerId = inRollOff && !state.rollOffSetupMode ? state.rollOffPlayerIds[state.rollOffIndex] : null;
+      const isCurrentTurn = inRollOff ? (p.id === currentRollOffPlayerId) : (state.players.indexOf(p) === state.currentIndex);
+      
+      div.className = "player-row" + (isCurrentTurn ? " current-turn" : "");
       const scoreClass = "score" + (p.id === leaderId ? " leader" : "");
-      div.innerHTML = `<div class="player-main"><span>${p.name}</span>${p.id === state.winnerId ? '<span class="pill-warning">Winner</span>' : ""}</div><div><span class="${scoreClass}">${p.score}</span></div>`;
+      
+      let badges = "";
+      
+      // During roll-off setup, show order number and up/down arrows (scorekeeper only)
+      if (isInRollOff && state.rollOffSetupMode) {
+        const orderNum = rollOffPosition + 1;
+        const isFirst = rollOffPosition === 0;
+        const isLast = rollOffPosition === state.rollOffPlayerIds.length - 1;
+        
+        badges += `<span class="chip" style="margin-left:4px;">#${orderNum}</span>`;
+        
+        // Only show arrows for scorekeeper, not viewers
+        if (!isViewer) {
+          badges += `<button class="reorder-btn" data-player-id="${p.id}" data-direction="up" ${isFirst ? 'disabled' : ''} style="margin-left:4px; padding:2px 6px; font-size:0.7rem; cursor:${isFirst ? 'not-allowed' : 'pointer'}; opacity:${isFirst ? '0.3' : '1'}; background:transparent; border:1px solid var(--muted); border-radius:4px; color:var(--text);">▲</button>`;
+          badges += `<button class="reorder-btn" data-player-id="${p.id}" data-direction="down" ${isLast ? 'disabled' : ''} style="padding:2px 6px; font-size:0.7rem; cursor:${isLast ? 'not-allowed' : 'pointer'}; opacity:${isLast ? '0.3' : '1'}; background:transparent; border:1px solid var(--muted); border-radius:4px; color:var(--text);">▼</button>`;
+        }
+      } else if (isInRollOff) {
+        // During actual roll-off play, just show order number
+        const orderNum = rollOffPosition + 1;
+        badges += `<span class="chip" style="margin-left:4px;">#${orderNum}</span>`;
+      }
+      
+      // Show winner badges
+      const hasTiedWinners = state.rebuttalHit100Order.length > 0;
+      
+      if (p.id === state.ultimateWinnerId) {
+        // Ultimate winner after roll-off or clean rebuttal win
+        badges += '<span class="pill" style="margin-left:4px; background: rgba(29,214,143,0.2); color: var(--accent);">🏆 Ultimate Winner</span>';
+      } else if (p.id === state.winnerId && state.phase !== "normal") {
+        if (hasTiedWinners) {
+          // Original winner when there are tied winners - green
+          badges += '<span class="pill" style="margin-left:4px; background: rgba(29,214,143,0.2); color: var(--accent);">Original Winner</span>';
+        } else if (!state.ultimateWinnerId) {
+          // Just "Winner" in green if no ties yet and no ultimate winner
+          badges += '<span class="pill" style="margin-left:4px; background: rgba(29,214,143,0.2); color: var(--accent);">Winner</span>';
+        }
+      }
+      
+      // Show "Tied Winner" badge for players who tied during rebuttal (yellow)
+      if (state.rebuttalHit100Order.includes(p.id) && p.id !== state.winnerId && p.id !== state.ultimateWinnerId) {
+        badges += '<span class="pill-warning" style="margin-left:4px;">Tied Winner</span>';
+      }
+      
+      // Show loser badge
+      if (p.id === state.loserId && state.gameComplete) {
+        badges += '<span class="pill-danger" style="margin-left:4px;">🥃 Takes Shot</span>';
+      }
+      // Show "Spectating" for players not in roll-off
+      if (inRollOff && !isInRollOff) {
+        badges += '<span class="chip" style="margin-left:4px; opacity: 0.5;">Spectating</span>';
+      }
+      
+      div.innerHTML = `<div class="player-main"><span>${p.name}</span>${badges}</div><div><span class="${scoreClass}">${p.score}</span></div>`;
       playersList.appendChild(div);
     });
+    
+    // Add event listeners for reorder buttons (scorekeeper only)
+    if (inRollOff && state.rollOffSetupMode && !isViewer) {
+      playersList.querySelectorAll('.reorder-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const playerId = btn.dataset.playerId;
+          const direction = btn.dataset.direction;
+          reorderRollOffPlayer(playerId, direction);
+        };
+      });
+    }
+    
     playersList.style.display = "flex";
     roundByRoundContainer.style.display = "none";
-    scoreboardTitle.textContent = "Triple Snakes Arena";
+    scoreboardTitle.textContent = inRollOff ? (state.phase === "winRollOff" ? "Winner's Roll-Off" : "Loser's Roll-Off") : "Triple Snakes Arena";
     roundByRoundBtn.textContent = "Round by Round Scores";
     roundByRoundBtn.setAttribute("aria-pressed", "false");
+  }
+  
+  function reorderRollOffPlayer(playerId, direction) {
+    const currentIndex = state.rollOffPlayerIds.indexOf(playerId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= state.rollOffPlayerIds.length) return;
+    
+    // Swap positions
+    const temp = state.rollOffPlayerIds[currentIndex];
+    state.rollOffPlayerIds[currentIndex] = state.rollOffPlayerIds[newIndex];
+    state.rollOffPlayerIds[newIndex] = temp;
+    
+    renderScoreboard();
+    syncToFirebase();
   }
 
   function renderScoreboardRoundByRound() {
@@ -724,10 +899,61 @@
   function renderScoreboard() {
     if (state.showRoundByRound) renderScoreboardRoundByRound();
     else renderScoreboardNormal();
-    roundChip.textContent = `Round ${state.round}`;
-    phaseChip.textContent = { normal: "Normal play", rebuttal: "Rebuttal round", winRollOff: "Winner roll-off", lastRollOff: "Last-place roll-off" }[state.phase];
-    const currentPlayer = state.players[state.currentIndex];
-    turnPlayerPill.textContent = currentPlayer ? currentPlayer.name : "Player ?";
+    
+    const inRollOff = state.phase === "winRollOff" || state.phase === "lastRollOff";
+    const rollOffSetupControls = qs("#rollOffSetupControls");
+    
+    // Show/hide roll-off setup controls (only for scorekeeper, not viewers)
+    if (inRollOff && state.rollOffSetupMode && !isViewer) {
+      rollOffSetupControls.style.display = "block";
+      turnCard.style.display = "none"; // Hide turn card during setup
+    } else if (state.gameComplete) {
+      rollOffSetupControls.style.display = "none";
+      turnCard.style.display = "none"; // Hide turn card when game is over
+    } else {
+      rollOffSetupControls.style.display = "none";
+      if (state.started && !isViewer) {
+        turnCard.style.display = "block";
+      }
+    }
+    
+    // Update round chip based on phase
+    if (state.gameComplete) {
+      roundChip.textContent = `Final`;
+    } else if (inRollOff && !state.rollOffSetupMode) {
+      roundChip.textContent = `Turn ${state.rollOffIndex + 1} of ${state.rollOffPlayerIds.length}`;
+    } else if (inRollOff && state.rollOffSetupMode) {
+      roundChip.textContent = `Setup`;
+    } else {
+      roundChip.textContent = `Round ${state.round}`;
+    }
+    
+    let phaseText = { normal: "Normal play" }[state.phase] || "";
+    if (state.gameComplete) {
+      phaseText = "Game Over";
+    } else if (state.phase === "rebuttal") {
+      const remaining = (state.players.length - 1) - state.rebuttalTurnsTaken;
+      phaseText = `Rebuttal (${remaining} left)`;
+    } else if (state.phase === "winRollOff") {
+      phaseText = state.rollOffSetupMode ? `Winner's Roll-Off (Set Order)` : `Winner's Roll-Off`;
+    } else if (state.phase === "lastRollOff") {
+      phaseText = state.rollOffSetupMode ? `Loser's Roll-Off (Set Order)` : `Loser's Roll-Off`;
+    }
+    phaseChip.textContent = phaseText;
+    
+    // Get current player based on phase
+    let currentPlayer;
+    if (state.gameComplete) {
+      currentPlayer = null;
+    } else if (inRollOff && !state.rollOffSetupMode) {
+      const currentId = state.rollOffPlayerIds[state.rollOffIndex];
+      currentPlayer = state.players.find(p => p.id === currentId);
+    } else if (inRollOff && state.rollOffSetupMode) {
+      currentPlayer = null; // No current player during setup
+    } else {
+      currentPlayer = state.players[state.currentIndex];
+    }
+    turnPlayerPill.textContent = currentPlayer ? currentPlayer.name : (state.gameComplete ? "Complete" : (state.rollOffSetupMode ? "Set Order" : "Player ?"));
     targetScoreLabel.textContent = state.target;
   }
 
@@ -752,15 +978,49 @@
   function getCompletedRoundsCount() { return state.roundScores.length; }
 
   function advanceTurn() {
+    // Handle roll-off phases separately - only cycle through roll-off players
+    if ((state.phase === "winRollOff" || state.phase === "lastRollOff") && !state.rollOffSetupMode) {
+      state.rollOffIndex++;
+      if (state.rollOffIndex >= state.rollOffPlayerIds.length) {
+        state.rollOffIndex = 0; // Loop back for another round
+        state.rollOffRoundComplete = true; // Mark that everyone has rolled
+        addLog(`Roll-off round complete. Checking results...`, "system");
+        
+        // Evaluate after complete round
+        checkRollOffResults();
+      }
+      renderScoreboard();
+      syncToFirebase();
+      return;
+    }
+    
     state.currentIndex++;
     state.turnsThisRound++;
+    
+    // In rebuttal phase, skip the winner's turn
+    if (state.phase === "rebuttal" && state.winnerId) {
+      const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
+      if (state.currentIndex === winnerIndex) {
+        state.currentIndex++;
+      }
+    }
+    
     if (state.currentIndex >= state.players.length) {
       snapshotRoundTotals();
       state.currentIndex = 0;
       state.round++;
       state.turnsThisRound = 0;
       state.consecutiveZeroTurnsInRound = 0;
-      if (state.round === 4) {
+      
+      // After round wrap in rebuttal, skip winner if they're first
+      if (state.phase === "rebuttal" && state.winnerId) {
+        const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
+        if (state.currentIndex === winnerIndex) {
+          state.currentIndex++;
+        }
+      }
+      
+      if (state.round === 4 && state.phase === "normal") {
         const msg = "Start of Round 4 -- Ties and Lead Change Drinks Now in Effect";
         addLog(msg, "system");
         queueToast(msg);
@@ -769,12 +1029,83 @@
     renderScoreboard();
     syncToFirebase();
   }
+  
+  function checkRollOffResults() {
+    if (state.phase === "winRollOff") {
+      const maxScore = Math.max(...state.rollOffPlayerIds.map(id => state.players.find(p => p.id === id).score));
+      const leaders = state.rollOffPlayerIds.filter(id => state.players.find(p => p.id === id).score === maxScore);
+      
+      if (leaders.length === 1) {
+        const winnerPlayer = state.players.find(p => p.id === leaders[0]);
+        const winnerName = winnerPlayer.name;
+        
+        // Set ultimate winner
+        state.ultimateWinnerId = leaders[0];
+        
+        // Now check for loser's roll-off
+        const minScore = Math.min(...state.players.map(p => p.score));
+        const lastPlace = state.players.filter(p => p.score === minScore);
+        
+        if (lastPlace.length > 1) {
+          const rollOffIds = lastPlace.map(p => p.id);
+          
+          state.phase = "lastRollOff";
+          state.rollOffPlayerIds = rollOffIds;
+          state.rollOffIndex = 0;
+          state.rollOffSetupMode = true;
+          state.rollOffRoundComplete = false;
+          
+          const names = lastPlace.map(p => p.name).join(", ");
+          addLog(`🏆 ${winnerName} is the Ultimate Winner! Loser's Roll-Off begins. Participants: ${names}`, "system");
+          queueToast(`🏆 ${winnerName} wins! Loser's Roll-Off - set the order.`);
+        } else {
+          state.loserId = lastPlace[0].id;
+          state.gameComplete = true;
+          addLog(`🏆 ${winnerName} is the Ultimate Winner! ${lastPlace[0].name} takes the shot.`, "system");
+          showGameOverBanner();
+        }
+      } else {
+        // Still tied, continue roll-off
+        state.rollOffRoundComplete = false;
+        addLog(`Still tied! Roll-off continues.`, "system");
+        queueToast("Still tied! Roll-off continues.");
+      }
+    } else if (state.phase === "lastRollOff") {
+      // Get scores of all roll-off participants
+      const rollOffScores = state.rollOffPlayerIds.map(id => ({
+        id,
+        score: state.players.find(p => p.id === id).score
+      }));
+      
+      const maxScore = Math.max(...rollOffScores.map(p => p.score));
+      const minScore = Math.min(...rollOffScores.map(p => p.score));
+      
+      // If someone has more points than another (scores are different), the roll-off ends
+      if (maxScore !== minScore) {
+        const loser = rollOffScores.find(p => p.score === minScore);
+        const loserName = state.players.find(p => p.id === loser.id).name;
+        state.loserId = loser.id;
+        state.gameComplete = true;
+        addLog(`${loserName} loses the Loser's Roll-Off and takes the shot!`, "system");
+        showGameOverBanner();
+      } else {
+        // Still tied, continue roll-off
+        state.rollOffRoundComplete = false;
+        addLog(`Still tied for last! Roll-off continues.`, "system");
+        queueToast("Still tied! Roll-off continues.");
+      }
+    }
+  }
 
   function applyScore(player, delta) {
     const before = player.score;
     let after = before + delta;
     let bust = false;
-    if (after > state.target && state.phase !== "winRollOff" && state.phase !== "lastRollOff") { bust = true; after = 77; }
+    // Can bust in normal play, rebuttal, and loser's roll-off - but NOT winner's roll-off
+    if (after > state.target && state.phase !== "winRollOff") {
+      bust = true;
+      after = 77;
+    }
     player.score = after;
     return { before, after, bust };
   }
@@ -817,47 +1148,73 @@
       if (player.score === state.target && !state.winnerId) {
         state.winnerId = player.id;
         state.phase = "rebuttal";
-        const msg = `${player.name} reached ${state.target}. Rebuttal round begins (others get one more turn).`;
+        state.rebuttalTurnsTaken = 0;
+        state.rebuttalHit100Order = [];
+        const msg = `${player.name} reached ${state.target}! Every other player gets ONE more roll.`;
         addLog(msg, "system");
         queueToast(`${player.name} hit ${state.target}! Rebuttal round.`);
       }
     } else if (state.phase === "rebuttal") {
-      const others = state.players.filter(p => p.id !== state.winnerId);
-      const rebuttalDone = state.turnsThisRound >= others.length;
+      // Track if this player just hit 100 during rebuttal
+      if (player.score === state.target && player.id !== state.winnerId && !state.rebuttalHit100Order.includes(player.id)) {
+        state.rebuttalHit100Order.push(player.id);
+        addLog(`${player.name} ties at ${state.target}!`, "system");
+        queueToast(`${player.name} ties at ${state.target}!`);
+      }
+      
+      // Count this turn if it's not the winner
+      if (player.id !== state.winnerId) {
+        state.rebuttalTurnsTaken++;
+      }
+      
+      const rebuttalDone = state.rebuttalTurnsTaken >= state.players.length - 1;
       if (rebuttalDone) {
         const winner = state.players.find(p => p.id === state.winnerId);
         const tiesAt100 = state.players.filter(p => p.score === state.target);
+        
         if (tiesAt100.length > 1) {
+          // Winner's Roll-Off - setup mode for reordering
+          const rollOffIds = tiesAt100.map(p => p.id);
+          
           state.phase = "winRollOff";
-          addLog("Multiple players tied at 100 after rebuttal. Winner roll-off begins.", "system");
-          queueToast("Winner roll-off begins!");
+          state.rollOffPlayerIds = rollOffIds;
+          state.rollOffIndex = 0;
+          state.rollOffSetupMode = true;
+          state.rollOffRoundComplete = false;
+          
+          const names = rollOffIds.map(id => state.players.find(p => p.id === id).name).join(", ");
+          addLog(`Winner's Roll-Off! Participants: ${names}. Use arrows to set order, then click "Start Roll-Off".`, "system");
+          queueToast("Winner's Roll-Off! Set the order.");
         } else {
+          // Check for loser's roll-off
           const minScore = Math.min(...state.players.map(p => p.score));
           const lastPlace = state.players.filter(p => p.score === minScore);
+          
           if (lastPlace.length > 1) {
+            // Loser's Roll-Off - setup mode for reordering
+            const rollOffIds = lastPlace.map(p => p.id);
+            
             state.phase = "lastRollOff";
-            addLog(`Multiple players tied for last at ${minScore}. Last-place roll-off begins.`, "system");
-            queueToast("Last-place roll-off begins!");
+            state.rollOffPlayerIds = rollOffIds;
+            state.rollOffIndex = 0;
+            state.rollOffSetupMode = true;
+            state.rollOffRoundComplete = false;
+            
+            const names = rollOffIds.map(p => p.name).join(", ");
+            addLog(`Loser's Roll-Off! Participants: ${names}. Use arrows to set order, then click "Start Roll-Off".`, "system");
+            queueToast("Loser's Roll-Off! Set the order.");
           } else {
-            addLog(`${winner.name} wins the game. Last-place is ${lastPlace[0].name}.`, "system");
-            queueToast(`${winner.name} wins! ${lastPlace[0].name} is last.`);
+            // Game complete - set ultimate winner and loser
+            state.ultimateWinnerId = winner.id;
+            state.loserId = lastPlace[0].id;
+            state.gameComplete = true;
+            addLog(`🏆 ${winner.name} is the Ultimate Winner! ${lastPlace[0].name} takes the shot.`, "system");
+            showGameOverBanner();
           }
         }
       }
-    } else if (state.phase === "winRollOff") {
-      const tieGroup = state.players.filter(p => p.score === state.target);
-      if (tieGroup.length === 1) {
-        addLog(`${tieGroup[0].name} wins the winner roll-off.`, "system");
-        queueToast(`${tieGroup[0].name} wins the winner roll-off.`);
-      }
-    } else if (state.phase === "lastRollOff") {
-      const minScore = Math.min(...state.players.map(p => p.score));
-      const last = state.players.filter(p => p.score === minScore);
-      if (last.length === 1) {
-        addLog(`${last[0].name} loses the last-place roll-off.`, "system");
-        queueToast(`${last[0].name} loses the last-place roll-off.`);
-      }
     }
+    // Roll-off results are now checked in checkRollOffResults() after each complete round
   }
 
   function computeTurnScore() {
@@ -946,8 +1303,13 @@
   function resetToHome() {
     state.players = []; state.target = 100; state.round = 1; state.currentIndex = 0;
     state.started = false; state.phase = "normal"; state.winnerId = null;
+    state.ultimateWinnerId = null; state.loserId = null; state.gameComplete = false;
     state.consecutiveZeroTurnsInRound = 0; state.turnsThisRound = 0;
     state.lastLeaderId = null; state.roundScores = []; state.showRoundByRound = false;
+    state.rebuttalTurnsTaken = 0; state.rebuttalHit100Order = [];
+    state.rollOffPlayerIds = []; state.rollOffIndex = 0;
+    state.rollOffSetupMode = false; state.rollOffRoundComplete = false;
+    hideGameOverBanner();
     logContainer.innerHTML = "";
     setupCard.style.display = "block";
     scoreCard.style.display = "none";
@@ -980,8 +1342,12 @@
   qs("#startGameBtn").onclick = () => {
     if (state.players.length < 2) { alert("Add at least 2 players."); return; }
     state.round = 1; state.currentIndex = 0; state.started = true; state.phase = "normal";
-    state.winnerId = null; state.consecutiveZeroTurnsInRound = 0; state.turnsThisRound = 0;
+    state.winnerId = null; state.ultimateWinnerId = null; state.loserId = null; state.gameComplete = false;
+    state.consecutiveZeroTurnsInRound = 0; state.turnsThisRound = 0;
     state.lastLeaderId = null; state.roundScores = []; state.showRoundByRound = false;
+    state.rebuttalTurnsTaken = 0; state.rebuttalHit100Order = [];
+    state.rollOffPlayerIds = []; state.rollOffIndex = 0;
+    state.rollOffSetupMode = false; state.rollOffRoundComplete = false;
     setupCard.style.display = "none";
     scoreCard.style.display = "block";
     turnCard.style.display = "block";
@@ -995,7 +1361,13 @@
   };
 
   qs("#skipTurnBtn").onclick = () => {
-    const p = state.players[state.currentIndex];
+    let p;
+    if (state.phase === "winRollOff" || state.phase === "lastRollOff") {
+      const currentId = state.rollOffPlayerIds[state.rollOffIndex];
+      p = state.players.find(pl => pl.id === currentId);
+    } else {
+      p = state.players[state.currentIndex];
+    }
     addLog(`${p.name}'s turn skipped.`, "system");
     queueToast(`${p.name}'s turn skipped.`);
     advanceTurn();
@@ -1003,8 +1375,31 @@
 
   roundByRoundBtn.onclick = () => { state.showRoundByRound = !state.showRoundByRound; renderScoreboard(); };
 
+  // Start Roll-Off button
+  qs("#startRollOffBtn").onclick = () => {
+    state.rollOffSetupMode = false;
+    state.rollOffIndex = 0;
+    state.rollOffRoundComplete = false;
+    
+    const orderNames = state.rollOffPlayerIds.map(id => state.players.find(p => p.id === id).name).join(" → ");
+    const rollOffType = state.phase === "winRollOff" ? "Winner's" : "Loser's";
+    addLog(`${rollOffType} Roll-Off started! Order: ${orderNames}`, "system");
+    queueToast(`${rollOffType} Roll-Off started!`);
+    
+    renderScoreboard();
+    syncToFirebase();
+  };
+
   qs("#submitTurnBtn").onclick = () => {
-    const p = state.players[state.currentIndex];
+    // Get current player based on phase
+    let p;
+    if (state.phase === "winRollOff" || state.phase === "lastRollOff") {
+      const currentId = state.rollOffPlayerIds[state.rollOffIndex];
+      p = state.players.find(pl => pl.id === currentId);
+    } else {
+      p = state.players[state.currentIndex];
+    }
+    
     const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
     const res = computeTurnScore();
     let turnScore = res.score;
@@ -1049,8 +1444,12 @@
     if (events.includes("straightSuccess")) { addLog(`${p.name} completed the straight via green die.`, "info"); queueToast(`Straight! ${p.name} scores big.`); }
     if (events.includes("straightFail")) { addLog(`${p.name} failed to complete the straight and scored 0.`, "drink"); queueToast(`${p.name} drinks – straight failed.`); }
 
-    handleLeaderAndTies(p);
-    evaluateWinState(p);
+    // Only check leader/ties during normal play
+    if (state.phase === "normal" || state.phase === "rebuttal") {
+      handleLeaderAndTies(p);
+      evaluateWinState(p);
+    }
+    
     state.showRoundByRound = false;
     advanceTurn();
   };
@@ -1183,6 +1582,17 @@
 
   // Check URL on page load
   checkUrlForRoom();
+  
+  // Game over banner buttons
+  qs("#closeGameOverBtn").onclick = () => {
+    hideGameOverBanner();
+  };
+  
+  qs("#newGameBtn").onclick = () => {
+    hideGameOverBanner();
+    if (currentRoomCode && !isViewer) database.ref('rooms/' + currentRoomCode).remove();
+    resetToHome();
+  };
 </script>
 </body>
 </html>
