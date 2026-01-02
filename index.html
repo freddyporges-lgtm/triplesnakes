@@ -249,7 +249,11 @@
 
     <!-- Viewer Banner (shown when viewing) -->
     <div class="viewer-banner" id="viewerBanner" style="display:none;">
-      👁 Viewing Live Scoreboard
+      <div>👁 Viewing Live Scoreboard</div>
+      <button class="btn btn-sm mt-4" id="wakeLockBtn" style="background: transparent; border: 1px solid var(--warning); color: var(--warning);">
+        🔅 Keep Screen On
+      </button>
+      <div class="muted mt-4" id="wakeLockStatus"></div>
     </div>
 
     <div class="card" id="setupCard">
@@ -1127,6 +1131,55 @@
     if (code.length !== 6) { alert("Please enter a 6-character room code."); return; }
     joinRoom(code);
   };
+
+  // Wake Lock for viewers
+  let wakeLock = null;
+  const wakeLockBtn = qs("#wakeLockBtn");
+  const wakeLockStatus = qs("#wakeLockStatus");
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLockBtn.textContent = "🔆 Screen Staying On";
+        wakeLockBtn.style.background = "rgba(255, 209, 102, 0.2)";
+        wakeLockStatus.textContent = "Your screen will stay on while viewing.";
+        
+        wakeLock.addEventListener('release', () => {
+          wakeLockBtn.textContent = "🔅 Keep Screen On";
+          wakeLockBtn.style.background = "transparent";
+          wakeLockStatus.textContent = "";
+          wakeLock = null;
+        });
+      } else {
+        wakeLockStatus.textContent = "Screen wake lock not supported on this device.";
+      }
+    } catch (err) {
+      wakeLockStatus.textContent = "Couldn't keep screen on: " + err.message;
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release();
+      wakeLock = null;
+    }
+  }
+
+  wakeLockBtn.onclick = () => {
+    if (wakeLock) {
+      releaseWakeLock();
+    } else {
+      requestWakeLock();
+    }
+  };
+
+  // Re-acquire wake lock when page becomes visible again
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isViewer && wakeLock === null && wakeLockBtn.textContent.includes("Staying")) {
+      requestWakeLock();
+    }
+  });
 
   // Check URL on page load
   checkUrlForRoom();
