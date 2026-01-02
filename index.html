@@ -134,8 +134,10 @@
       box-shadow: none;
     }
     .btn-danger {
-      background: var(--danger);
-      color: #fff;
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(255,75,106,0.5);
+      box-shadow: none;
     }
     .btn-sm {
       padding: 8px 12px;
@@ -656,6 +658,10 @@
             Match
           </label>
           <label class="radio-pill">
+            <input type="radio" name="outcomeType" value="doubleDouble" />
+            Double Double Match
+          </label>
+          <label class="radio-pill">
             <input type="radio" name="outcomeType" value="fourKind" />
             Four-of-a-kind
           </label>
@@ -675,10 +681,6 @@
             <input type="radio" name="outcomeType" value="bust77" />
             Bust (77)
           </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="diceOff" />
-            Dice off table
-          </label>
         </div>
       </div>
 
@@ -688,11 +690,6 @@
         <div class="mt-4">
           <label style="display:block; margin-bottom:4px;">Select Dice Face</label>
           <div class="dice-picker" id="matchDicePicker">
-            <button type="button" class="die-btn" data-face="1" aria-label="Face 1">
-              <div class="die">
-                <div class="pip pos-5"></div>
-              </div>
-            </button>
             <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
               <div class="die">
                 <div class="pip pos-1"></div>
@@ -750,6 +747,107 @@
         <input id="matchCount2" type="hidden" />
       </div>
 
+      <div id="doubleDoubleFields" class="mt-8" style="display:none;">
+        <h3 style="margin:0 0 4px;">Double Double Match</h3>
+        <div class="mt-4">
+          <label style="display:block; margin-bottom:4px;">First matching pair</label>
+          <div class="dice-picker" id="ddPair1Picker">
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-5"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-5"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-4"></div>
+                <div class="pip pos-6"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+        <div class="mt-4">
+          <label style="display:block; margin-bottom:4px;">Second matching pair</label>
+          <div class="dice-picker" id="ddPair2Picker">
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-5"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-5"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6">
+              <div class="die">
+                <div class="pip pos-1"></div>
+                <div class="pip pos-3"></div>
+                <div class="pip pos-4"></div>
+                <div class="pip pos-6"></div>
+                <div class="pip pos-7"></div>
+                <div class="pip pos-9"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <input id="ddPair1Face" type="hidden" />
+        <input id="ddPair2Face" type="hidden" />
+
+        <div class="mt-4 muted">
+          Use when two different pairs are made on the final roll. Score follows your Double Double rules (sum of both pairs).
+        </div>
+      </div>
+
       <div id="fourKindFields" class="mt-8" style="display:none;">
         <div>
           <label style="display:block; margin-bottom:4px;">Four-of-a-kind face</label>
@@ -805,14 +903,22 @@
 
         <div class="mt-6">
           <label style="display:block; margin-bottom:4px;">Use bonus?</label>
-          <button
-            type="button"
-            id="fourKindBonusToggle"
-            class="toggle-btn toggle-on"
-            aria-pressed="true"
-          >
-            Yes (use bonus)
-          </button>
+          <div class="match-count-picker" id="fourKindBonusGroup">
+            <button
+              type="button"
+              class="match-count-btn selected"
+              data-mode="bonus"
+            >
+              Yes (use bonus)
+            </button>
+            <button
+              type="button"
+              class="match-count-btn"
+              data-mode="normal"
+            >
+              No (mathematical score)
+            </button>
+          </div>
           <input id="fourKindBonus" type="hidden" value="bonus" />
         </div>
 
@@ -859,35 +965,6 @@
         </div>
       </div>
 
-      <div id="diceOffFields" class="mt-8" style="display:none;">
-        <div class="cols-2">
-          <div>
-            <label>Dice lost off table</label>
-            <input id="diceLost" type="number" min="1" max="4" />
-          </div>
-          <div>
-            <label>Remaining dice all matched?</label>
-            <select id="diceOffMatched">
-              <option value="no">No (still 0 points)</option>
-              <option value="yes">Yes (enter that match below)</option>
-            </select>
-          </div>
-        </div>
-        <div class="mt-4 cols-2">
-          <div>
-            <label>Match face (if yes)</label>
-            <input id="diceOffFace" type="number" min="1" max="6" />
-          </div>
-          <div>
-            <label>Count</label>
-            <input id="diceOffCount" type="number" min="2" max="3" />
-          </div>
-        </div>
-        <div class="mt-4 muted">
-          If all remaining dice match, the turn ends and that match scores; otherwise 0 points.
-        </div>
-      </div>
-
       <div class="divider"></div>
 
       <div class="mt-8 row" style="justify-content:space-between; align-items:center;">
@@ -899,7 +976,10 @@
     </div>
 
     <div class="card" id="logCard" style="display:none;">
-      <h2>Game Tracker</h2>
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h2 style="margin-bottom:0;">Game Tracker</h2>
+        <button class="btn btn-danger btn-sm" id="endGameBtn">End Game</button>
+      </div>
       <div class="log" id="logContainer"></div>
     </div>
 
@@ -980,6 +1060,7 @@
   const roundByRoundContainer = qs("#roundByRoundContainer");
   const scoreboardTitle = qs("#scoreboardTitle");
   const roundByRoundBtn = qs("#roundByRoundBtn");
+  const endGameBtn = document.getElementById("endGameBtn");
 
   const hofToggleBtn = document.getElementById("hofToggle");
   const hofSection = document.getElementById("hall-of-fame");
@@ -1342,22 +1423,20 @@
       const c2 = parseInt(qs("#matchCount2").value, 10);
 
       if (!isNaN(f1) && !isNaN(c1)) {
-        if (f1 === 1 && c1 === 2) {
-          events.push("snakeEyes");
-        } else {
-          score += f1 * c1;
-          if (f1 === 1 && c1 === 3) events.push("tripleSnakes");
-        }
+        score += f1 * c1;
       }
       if (!isNaN(f2) && !isNaN(c2)) {
-        if (f2 === 1 && c2 === 2) {
-          events.push("snakeEyes");
-        } else {
-          score += f2 * c2;
-          if (f2 === 1 && c2 === 3) events.push("tripleSnakes");
-        }
+        score += f2 * c2;
       }
       return { score: score || 0, events };
+    }
+
+    if (outcomeType === "doubleDouble") {
+      const p1 = parseInt(qs("#ddPair1Face").value, 10);
+      const p2 = parseInt(qs("#ddPair2Face").value, 10);
+      if (isNaN(p1) || isNaN(p2)) return { score: 0, events };
+      const s = p1 * 2 + p2 * 2;
+      return { score: s, events };
     }
 
     if (outcomeType === "fourKind") {
@@ -1385,22 +1464,6 @@
       }
     }
 
-    if (outcomeType === "diceOff") {
-      const lost = parseInt(qs("#diceLost").value, 10);
-      const matched = qs("#diceOffMatched").value === "yes";
-      const ev = ["diceOff"];
-      if (isNaN(lost)) return { score: 0, events: ev };
-      if (!matched) {
-        return { score: 0, events: ev };
-      } else {
-        const face = parseInt(qs("#diceOffFace").value, 10);
-        const count = parseInt(qs("#diceOffCount").value, 10);
-        if (isNaN(face) || isNaN(count)) return { score: 0, events: ev };
-        const s = face * count;
-        return { score: s, events: ev };
-      }
-    }
-
     return { score: 0, events };
   }
 
@@ -1408,28 +1471,28 @@
     const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
     const blocks = {
       match: qs("#matchFields"),
+      doubleDouble: qs("#doubleDoubleFields"),
       fourKind: qs("#fourKindFields"),
       straight: qs("#straightFields"),
       tripleSnakes: qs("#tripleSnakesFields"),
       zeroPoints: null,
-      bust77: null,
-      diceOff: qs("#diceOffFields")
+      bust77: null
     };
     qs("#matchFields").style.display = "none";
+    qs("#doubleDoubleFields").style.display = "none";
     qs("#fourKindFields").style.display = "none";
     qs("#straightFields").style.display = "none";
     qs("#tripleSnakesFields").style.display = "none";
-    qs("#diceOffFields").style.display = "none";
     if (blocks[outcomeType]) blocks[outcomeType].style.display = "block";
 
     const hints = {
-      match: "Use for two/three-of-a-kind, Double-Double, or Triple Snakes.",
+      match: "Use for two-of-a-kind and three-of-a-kind matched dice.",
+      doubleDouble: "Use when two different matching pairs are made on the final roll.",
       fourKind: "Use when four-of-a-kind ended the turn (with or without bonus).",
       straight: "Use only when a first-roll straight and green die were used.",
       tripleSnakes: "Use when rolling three 1s and choosing between tying the leader or taking 3 points.",
       zeroPoints: "Use when the turn ends with 0 points (no matches or snake eyes).",
-      bust77: "Use when the player busts and must reset directly to 77.",
-      diceOff: "One or more dice went off the table this turn."
+      bust77: "Use when the player busts and must reset directly to 77."
     };
     turnHint.textContent = hints[outcomeType] || "";
   }
@@ -1462,23 +1525,16 @@
     });
   });
 
-  function makeId() {
-    return 'p-' + Math.random().toString(16).slice(2) + Date.now().toString(16);
-  }
-
-  qs("#addPlayerBtn").onclick = () => {
-    const name = qs("#playerName").value.trim();
-    if (!name) return;
-    state.players.push({
-      id: makeId(),
-      name,
-      score: 0
+  document.querySelectorAll("#fourKindBonusGroup .match-count-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#fourKindBonusGroup .match-count-btn")
+        .forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#fourKindBonus").value = btn.dataset.mode;
     });
-    qs("#playerName").value = "";
-    renderSetupPlayers();
-  };
+  });
 
-  qs("#resetGameBtn").onclick = () => {
+  function resetToHome() {
     state.players = [];
     state.target = 100;
     state.round = 1;
@@ -1498,9 +1554,28 @@
     logCard.style.display = "none";
     qs("#editScoreWrapper").style.display = "none";
     renderSetupPlayers();
+  }
+
+  const addPlayerBtn = qs("#addPlayerBtn");
+  const resetGameBtn = qs("#resetGameBtn");
+  const startGameBtn = qs("#startGameBtn");
+
+  addPlayerBtn.onclick = () => {
+    const name = qs("#playerName").value.trim();
+    if (!name) return;
+    state.players.push({
+      id: 'p-' + Math.random().toString(16).slice(2) + Date.now().toString(16),
+      name,
+      score: 0
+    });
+    qs("#playerName").value = "";
+    renderSetupPlayers();
   };
 
-  qs("#startGameBtn").onclick = () => {
+  resetGameBtn.onclick = resetToHome;
+  endGameBtn.onclick = resetToHome;
+
+  startGameBtn.onclick = () => {
     if (state.players.length < 2) {
       alert("Add at least 2 players.");
       return;
@@ -1632,12 +1707,6 @@
       addLog(msg, "drink");
       queueToast(`Snake eyes! ${p.name} drinks.`);
     }
-    if (events.includes("diceOff")) {
-      const lost = parseInt(qs("#diceLost").value, 10) || 1;
-      const msg = `${p.name} rolled ${lost} die/dice off the table. Drinks ${lost}.`;
-      addLog(msg, "drink");
-      queueToast(`${p.name} drinks ${lost} – dice off table.`);
-    }
 
     handleLeaderAndTies(p);
     evaluateWinState(p);
@@ -1717,24 +1786,25 @@
     });
   });
 
-  const fourKindBonusInput = qs("#fourKindBonus");
-  const fourKindBonusToggle = qs("#fourKindBonusToggle");
+  const ddPair1FaceInput = qs("#ddPair1Face");
+  const ddPair2FaceInput = qs("#ddPair2Face");
 
-  fourKindBonusToggle.addEventListener("click", () => {
-    const isOn = fourKindBonusToggle.classList.contains("toggle-on");
-    if (isOn) {
-      fourKindBonusToggle.classList.remove("toggle-on");
-      fourKindBonusToggle.classList.add("toggle-off");
-      fourKindBonusToggle.textContent = "No (normal score)";
-      fourKindBonusToggle.setAttribute("aria-pressed", "false");
-      fourKindBonusInput.value = "normal";
-    } else {
-      fourKindBonusToggle.classList.remove("toggle-off");
-      fourKindBonusToggle.classList.add("toggle-on");
-      fourKindBonusToggle.textContent = "Yes (use bonus)";
-      fourKindBonusToggle.setAttribute("aria-pressed", "true");
-      fourKindBonusInput.value = "bonus";
-    }
+  document.querySelectorAll("#ddPair1Picker .die-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#ddPair1Picker .die-btn")
+        .forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      ddPair1FaceInput.value = btn.dataset.face;
+    });
+  });
+
+  document.querySelectorAll("#ddPair2Picker .die-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#ddPair2Picker .die-btn")
+        .forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      ddPair2FaceInput.value = btn.dataset.face;
+    });
   });
 </script>
 </body>
