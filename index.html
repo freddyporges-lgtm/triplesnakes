@@ -231,19 +231,18 @@
     .radio-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 6px;
     }
 
     .radio-pill {
       border-radius: 999px;
-      padding: 8px 14px;
+      padding: 8px 10px;
       border: 1px solid #21444f;
       font-size: 0.8rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      position: relative;
       transition:
         background 0.15s ease,
         border-color 0.15s ease,
@@ -253,6 +252,13 @@
     .radio-pill input {
       width: auto;
       margin: 0;
+    }
+    .radio-pill.selected {
+      border-color: var(--accent);
+      background: rgba(29,214,143,0.12);
+      color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5);
+      transform: translateY(-1px);
     }
 
     .cols-2 {
@@ -373,34 +379,34 @@
 
     .match-count-picker {
       display: flex;
-      gap: 10px;
-    }
-
-    .match-count-btn.selected,
-    .toggle-btn.toggle-on,
-    .radio-pill.selected {
-      background: rgba(29,214,143,0.22);
-      color: var(--accent);
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.8), 0 0 10px rgba(29,214,143,0.7);
-      transform: translateY(-1px);
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .match-count-btn,
     .toggle-btn {
       position: relative;
+      border-radius: 999px;
+      border: 1px solid #21444f;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
     }
 
-    .match-count-btn.selected::after,
-    .toggle-btn.toggle-on::after,
-    .radio-pill.selected::after {
-      content: "●";
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.7rem;
+    .match-count-btn.selected,
+    .toggle-btn.toggle-on {
+      border-color: var(--accent);
+      background: rgba(29,214,143,0.12);
       color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5);
+      transform: translateY(-1px);
     }
 
     .die {
@@ -433,10 +439,6 @@
     .toggle-btn {
       min-width: 140px;
       justify-content: center;
-    }
-    .toggle-on {
-      background: var(--accent);
-      color: #012016;
     }
     .toggle-off {
       background: transparent;
@@ -562,7 +564,7 @@
         padding: 12px 10px 8px;
       }
       .radio-row {
-        gap: 8px;
+        gap: 4px;
       }
       .radio-pill {
         font-size: 0.78rem;
@@ -737,8 +739,8 @@
         <div class="mt-6">
           <label style="display:block; margin-bottom:4px;">How many matches</label>
           <div class="match-count-picker" id="matchCountPicker">
-            <button type="button" class="btn btn-sm match-count-btn" data-count="2">2x</button>
-            <button type="button" class="btn btn-sm match-count-btn" data-count="3">3x</button>
+            <button type="button" class="match-count-btn" data-count="2">2x</button>
+            <button type="button" class="match-count-btn" data-count="3">3x</button>
           </div>
         </div>
 
@@ -806,7 +808,7 @@
           <button
             type="button"
             id="fourKindBonusToggle"
-            class="btn btn-sm toggle-btn toggle-on"
+            class="toggle-btn toggle-on"
             aria-pressed="true"
           >
             Yes (use bonus)
@@ -837,14 +839,14 @@
           <div class="match-count-picker" id="tripleSnakesToggle" style="margin-bottom:6px;">
             <button
               type="button"
-              class="btn btn-sm match-count-btn selected"
+              class="match-count-btn selected"
               data-mode="tieLeader"
             >
               Tie Current Leader
             </button>
             <button
               type="button"
-              class="btn btn-sm match-count-btn"
+              class="match-count-btn"
               data-mode="3"
             >
               Take 3 points
