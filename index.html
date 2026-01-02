@@ -227,30 +227,51 @@
       background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
       margin: 8px 0;
     }
+
     .radio-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 10px;
     }
+
     .radio-pill {
       border-radius: 999px;
-      padding: 8px 10px;
+      padding: 8px 14px;
       border: 1px solid #21444f;
       font-size: 0.8rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      position: relative;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.1s ease,
+        box-shadow 0.15s ease;
     }
     .radio-pill input {
       width: auto;
       margin: 0;
     }
     .radio-pill.selected {
-      border-color: var(--accent);
-      background: rgba(29,214,143,0.12);
+      border-color: #ffffff;
+      background: rgba(29,214,143,0.18);
       color: var(--accent);
+      box-shadow:
+        0 0 0 2px rgba(29,214,143,0.7),
+        0 0 0 4px rgba(255,255,255,0.8);
+      transform: translateY(-1px);
     }
+    .radio-pill.selected::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: inherit;
+      border: 1px solid rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+    }
+
     .cols-2 {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -366,13 +387,20 @@
     .die-btn.selected .die {
       box-shadow: 0 0 0 2px var(--accent);
     }
+
     .match-count-picker {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
-    .match-count-btn.selected {
+
+    .match-count-btn.selected,
+    .toggle-btn.toggle-on {
       background: var(--accent-soft);
       color: var(--accent);
+      box-shadow:
+        0 0 0 2px rgba(29,214,143,0.7),
+        0 0 0 4px rgba(255,255,255,0.85);
+      transform: translateY(-1px);
     }
 
     .die {
@@ -534,7 +562,7 @@
         padding: 12px 10px 8px;
       }
       .radio-row {
-        gap: 4px;
+        gap: 8px;
       }
       .radio-pill {
         font-size: 0.78rem;
@@ -644,10 +672,6 @@
           <label class="radio-pill">
             <input type="radio" name="outcomeType" value="bust77" />
             Bust (77)
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="outcomeType" value="diceOff" />
-            Dice off table
           </label>
         </div>
       </div>
@@ -824,35 +848,6 @@
         <input id="tripleSnakesMode" type="hidden" value="tieLeader" />
         <div class="mt-4 muted">
           Tie-the-leader sets this player's total score equal to the current highest score on the board.
-        </div>
-      </div>
-
-      <div id="diceOffFields" class="mt-8" style="display:none;">
-        <div class="cols-2">
-          <div>
-            <label>Dice lost off table</label>
-            <input id="diceLost" type="number" min="1" max="4" />
-          </div>
-          <div>
-            <label>Remaining dice all matched?</label>
-            <select id="diceOffMatched">
-              <option value="no">No (still 0 points)</option>
-              <option value="yes">Yes (enter that match below)</option>
-            </select>
-          </div>
-        </div>
-        <div class="mt-4 cols-2">
-          <div>
-            <label>Match face (if yes)</label>
-            <input id="diceOffFace" type="number" min="1" max="6" />
-          </div>
-          <div>
-            <label>Count</label>
-            <input id="diceOffCount" type="number" min="2" max="3" />
-          </div>
-        </div>
-        <div class="mt-4 muted">
-          If all remaining dice match, the turn ends and that match scores; otherwise 0 points.
         </div>
       </div>
 
@@ -1137,7 +1132,7 @@
     const div = document.createElement("div");
     div.className = "log-entry";
     let badge = "";
-    if (type === "drink") {
+       if (type === "drink") {
       badge = ' <span class="pill pill-warning">Drink</span>';
     } else if (type === "social") {
       badge = ' <span class="pill pill-danger">Social</span>';
@@ -1353,22 +1348,6 @@
       }
     }
 
-    if (outcomeType === "diceOff") {
-      const lost = parseInt(qs("#diceLost").value, 10);
-      const matched = qs("#diceOffMatched").value === "yes";
-      const ev = ["diceOff"];
-      if (isNaN(lost)) return { score: 0, events: ev };
-      if (!matched) {
-        return { score: 0, events: ev };
-      } else {
-        const face = parseInt(qs("#diceOffFace").value, 10);
-        const count = parseInt(qs("#diceOffCount").value, 10);
-        if (isNaN(face) || isNaN(count)) return { score: 0, events: ev };
-        const s = face * count;
-        return { score: s, events: ev };
-      }
-    }
-
     return { score: 0, events };
   }
 
@@ -1380,14 +1359,12 @@
       straight: qs("#straightFields"),
       tripleSnakes: qs("#tripleSnakesFields"),
       zeroPoints: null,
-      bust77: null,
-      diceOff: qs("#diceOffFields")
+      bust77: null
     };
     qs("#matchFields").style.display = "none";
     qs("#fourKindFields").style.display = "none";
     qs("#straightFields").style.display = "none";
     qs("#tripleSnakesFields").style.display = "none";
-    qs("#diceOffFields").style.display = "none";
     if (blocks[outcomeType]) blocks[outcomeType].style.display = "block";
 
     const hints = {
@@ -1396,8 +1373,7 @@
       straight: "Use only when a first-roll straight and green die were used.",
       tripleSnakes: "Use when rolling three 1s and choosing between tying the leader or taking 3 points.",
       zeroPoints: "Use when the turn ends with 0 points (no matches or snake eyes).",
-      bust77: "Use when the player busts and must reset directly to 77.",
-      diceOff: "One or more dice went off the table this turn."
+      bust77: "Use when the player busts and must reset directly to 77."
     };
     turnHint.textContent = hints[outcomeType] || "";
   }
@@ -1539,9 +1515,12 @@
     } else {
       if (turnScore === 0) {
         state.consecutiveZeroTurnsInRound++;
-        const zeroMsg = `${p.name} scored 0 this turn.`;
-        addLog(zeroMsg, "drink");
-        queueToast(`${p.name} drinks – 0 points.`);
+
+        if (!events.includes("snakeEyes")) {
+          const zeroMsg = `${p.name} scored 0 this turn.`;
+          addLog(zeroMsg, "drink");
+          queueToast(`${p.name} drinks – 0 points.`);
+        }
       } else {
         state.consecutiveZeroTurnsInRound = 0;
       }
@@ -1590,12 +1569,6 @@
       const msg = `${p.name} rolled snake eyes and ends the turn with 0.`;
       addLog(msg, "drink");
       queueToast(`Snake eyes! ${p.name} drinks.`);
-    }
-    if (events.includes("diceOff")) {
-      const lost = parseInt(qs("#diceLost").value, 10) || 1;
-      const msg = `${p.name} rolled ${lost} die/dice off the table. Drinks ${lost}.`;
-      addLog(msg, "drink");
-      queueToast(`${p.name} drinks ${lost} – dice off table.`);
     }
 
     handleLeaderAndTies(p);
