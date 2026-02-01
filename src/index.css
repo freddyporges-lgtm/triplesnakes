@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-primary text-white font-sans antialiased;
+  }
+
+  h1 {
+    @apply text-4xl font-bold;
+  }
+
+  h2 {
+    @apply text-2xl font-bold;
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-highlight text-white rounded-lg font-semibold hover:bg-opacity-90 transition-all duration-200 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-secondary text-white rounded-lg font-semibold hover:bg-accent transition-all duration-200 active:scale-95;
+  }
+
+  .btn-small {
+    @apply px-4 py-2 bg-highlight text-white rounded-lg font-medium hover:bg-opacity-90 transition-all;
+  }
+
+  .card {
+    @apply bg-secondary rounded-2xl p-6 border border-accent border-opacity-30 shadow-2xl;
+  }
+
+  .card-hover {
+    @apply card hover:border-highlight hover:border-opacity-50 transition-all duration-300;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-primary border-2 border-accent rounded-lg text-white placeholder-gray-500 focus:border-highlight focus:outline-none transition-colors duration-200;
+  }
+
+  .badge {
+    @apply inline-block px-3 py-1 text-sm font-semibold rounded-full bg-highlight bg-opacity-20 text-highlight;
+  }
+
+  .badge-success {
+    @apply inline-block px-3 py-1 text-sm font-semibold rounded-full bg-success bg-opacity-20 text-success;
+  }
+
+  .badge-warning {
+    @apply inline-block px-3 py-1 text-sm font-semibold rounded-full bg-yellow-500 bg-opacity-20 text-yellow-400;
+  }
+}
