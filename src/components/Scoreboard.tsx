@@ -85,6 +85,8 @@ export const Scoreboard: FC<ScoreboardProps> = ({ state, onRollOffReorder, isVie
           const isWinner = player.id === state.ultimateWinnerId;
           const isLoser = player.id === state.loserId && state.gameComplete;
           const isTiedWinner = state.rebuttalHit100Order.includes(player.id) && player.id !== state.winnerId;
+          const isPreviousWinner = player.id === state.previousWinnerId && !state.gameComplete;
+          const isPreviousLoser = player.id === state.previousLoserId && !state.gameComplete;
 
           return (
             <motion.div
@@ -101,6 +103,12 @@ export const Scoreboard: FC<ScoreboardProps> = ({ state, onRollOffReorder, isVie
                 <div>
                   <p className="font-semibold text-white">{player.name}</p>
                   <div className="flex gap-2 mt-1 flex-wrap">
+                    {isPreviousWinner && (
+                      <span className="badge-success text-xs opacity-60">⭐ Last Winner</span>
+                    )}
+                    {isPreviousLoser && (
+                      <span className="badge text-xs opacity-60">📍 Last Loser</span>
+                    )}
                     {isInRollOff && (
                       <span className="badge text-xs">#{rollOffPosition + 1}</span>
                     )}

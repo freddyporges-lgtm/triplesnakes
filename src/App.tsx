@@ -7,6 +7,7 @@ import { GameLog } from './components/GameLog';
 import type { GameState, LogEntry, OutcomeType } from './types/gameTypes';
 import {
   createInitialGameState,
+  createNewGameWithPlayers,
   computeTurnScore,
   applyScore,
   advanceTurn,
@@ -121,6 +122,12 @@ function App() {
     } else if (outcome.events.includes('tripleSnakesTieLeader')) {
       logType = 'social';
     } else if (outcome.score === 0) {
+      // Add sub-type for zero points (snake eyes vs no matches)
+      if (data.zeroType === 'snakeEyes') {
+        message += ' - 🐍 Snake Eyes';
+      } else if (data.zeroType === 'noMatches') {
+        message += ' - No Matches';
+      }
       logType = 'drink';
       newState.consecutiveZeroTurnsInRound++;
     } else {
@@ -204,10 +211,10 @@ function App() {
   };
 
   const handleNewGame = () => {
-    const newState = createInitialGameState();
+    const newState = createNewGameWithPlayers(state);
     setState(newState);
     setLogs([]);
-    addLog('New game started!', 'system');
+    addLog('New game started with same players!', 'system');
     if (roomCode && !isViewer) {
       syncStateToFirebase(roomCode, newState);
     }

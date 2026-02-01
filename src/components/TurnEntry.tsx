@@ -23,7 +23,12 @@ export const TurnEntry: React.FC<TurnEntryProps> = ({ onSubmit, disabled = false
 
   const handleOutcomeSelect = (outcome: OutcomeType) => {
     setSelectedOutcome(outcome);
-    setFormData({});
+    // Default to snake eyes for zero points
+    if (outcome === 'zeroPoints') {
+      setFormData({ zeroType: 'snakeEyes' });
+    } else {
+      setFormData({});
+    }
   };
 
   const handleSubmit = () => {
@@ -164,6 +169,31 @@ export const TurnEntry: React.FC<TurnEntryProps> = ({ onSubmit, disabled = false
                 onClick={() => setFormData({ ...formData, mode: '3' })}
               >
                 3 Points
+              </button>
+            </div>
+          </div>
+        );
+
+      case 'zeroPoints':
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-400">What caused the zero points?</p>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                className={`btn-secondary ${
+                  formData.zeroType === 'snakeEyes' ? 'bg-highlight' : ''
+                }`}
+                onClick={() => setFormData({ ...formData, zeroType: 'snakeEyes' })}
+              >
+                🐍 Snake Eyes
+              </button>
+              <button
+                className={`btn-secondary ${
+                  formData.zeroType === 'noMatches' ? 'bg-highlight' : ''
+                }`}
+                onClick={() => setFormData({ ...formData, zeroType: 'noMatches' })}
+              >
+                ✗ No Matches
               </button>
             </div>
           </div>

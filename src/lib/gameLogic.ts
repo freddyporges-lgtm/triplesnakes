@@ -34,6 +34,37 @@ export function createInitialGameState(): GameState {
     rollOffIndex: 0,
     rollOffSetupMode: false,
     rollOffRoundComplete: false,
+    previousWinnerId: null,
+    previousLoserId: null,
+  };
+}
+
+// Create new game with same players (remembers previous winner/loser)
+export function createNewGameWithPlayers(state: GameState): GameState {
+  return {
+    players: state.players.map(p => ({ ...p, score: 0 })),
+    target: 100,
+    round: 1,
+    currentIndex: 0,
+    started: true,
+    phase: 'normal',
+    winnerId: null,
+    ultimateWinnerId: state.ultimateWinnerId,
+    loserId: null,
+    gameComplete: false,
+    consecutiveZeroTurnsInRound: 0,
+    turnsThisRound: 0,
+    lastLeaderId: null,
+    roundScores: [],
+    showRoundByRound: false,
+    rebuttalTurnsTaken: 0,
+    rebuttalHit100Order: [],
+    rollOffPlayerIds: [],
+    rollOffIndex: 0,
+    rollOffSetupMode: false,
+    rollOffRoundComplete: false,
+    previousWinnerId: state.ultimateWinnerId,
+    previousLoserId: state.loserId,
   };
 }
 
@@ -358,9 +389,13 @@ export function checkLeaderAndTies(state: GameState, currentPlayer: Player): str
   return events;
 }
 
-// Group drink check
+// Group drink check (only applies for 4+ players)
 export function checkZeroRoundGroupDrink(state: GameState): boolean {
-  if (state.consecutiveZeroTurnsInRound >= state.players.length && state.phase === 'normal') {
+  if (
+    state.consecutiveZeroTurnsInRound >= state.players.length &&
+    state.phase === 'normal' &&
+    state.players.length >= 4
+  ) {
     state.consecutiveZeroTurnsInRound = 0;
     return true;
   }
