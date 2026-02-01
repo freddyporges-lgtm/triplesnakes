@@ -34,6 +34,8 @@ export interface GameState {
   rollOffIndex: number;
   rollOffSetupMode: boolean;
   rollOffRoundComplete: boolean;
+  previousWinnerId: string | null;
+  previousLoserId: string | null;
 }
 
 export type OutcomeType =
