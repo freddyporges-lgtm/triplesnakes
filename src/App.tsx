@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { Setup } from './components/Setup';
 import { Scoreboard } from './components/Scoreboard';
 import { TurnEntry } from './components/TurnEntry';
-import { GameLog } from './components/GameLog';
 import type { GameState, LogEntry, OutcomeType } from './types/gameTypes';
 import {
   createInitialGameState,
@@ -230,165 +228,196 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-primary text-white p-4">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-2"
-        >
-          <h1 className="text-5xl font-bold text-highlight">🐍 Triple Snakes</h1>
-          <p className="text-gray-400">A modern dice game scorekeeper</p>
-        </motion.div>
+    <div className="app-shell">
+      {/* Header */}
+      <header className="app-header">
+        <img src="Triple Snakes-B3.png" alt="Triple Snakes header logo" className="logo-top" />
+      </header>
 
-        {/* Room Info */}
-        {roomCode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="card text-center space-y-2"
-          >
-            <p className="text-sm text-gray-400">
-              {isViewer ? 'Viewing room:' : 'Room code:'}
-            </p>
-            <p className="text-2xl font-mono font-bold text-highlight">{roomCode}</p>
-            {!isViewer && (
-              <p className="text-sm text-gray-400">
-                Share:{' '}
-                <code className="bg-secondary px-2 py-1 rounded">
-                  {window.location.origin}?room={roomCode}
-                </code>
-              </p>
-            )}
-          </motion.div>
+      {/* Main App */}
+      <main className="app">
+        <h1>Triple Snakes Scorekeeper</h1>
+        <div className="tagline">Smart scorekeeper for the Triple Snakes dice game.</div>
+
+        {/* Room Banner (shown when hosting) */}
+        {roomCode && !isViewer && (
+          <div className="room-banner">
+            <div>Room Code:</div>
+            <div className="room-code">{roomCode}</div>
+            <div className="room-link">{window.location.origin}?room={roomCode}</div>
+            <button
+              className="btn btn-sm mt-4"
+              onClick={() => {
+                const url = `${window.location.origin}?room=${roomCode}`;
+                navigator.clipboard.writeText(url);
+              }}
+            >
+              Copy Link
+            </button>
+          </div>
         )}
 
-        {/* Main Content */}
-        {showRoomJoin && !state.started ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="card max-w-2xl mx-auto space-y-6"
-          >
-            <h2 className="text-2xl font-bold">Join or Create Game</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block mb-2 text-sm font-semibold">Join Existing Room</label>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    className="input-field flex-1"
-                    placeholder="Enter room code..."
-                    value={joinRoomInput}
-                    onChange={(e) => setJoinRoomInput(e.target.value.toUpperCase())}
-                    onKeyPress={(e) =>
-                      e.key === 'Enter' && handleJoinRoom(joinRoomInput)
-                    }
-                  />
-                  <button
-                    className="btn-primary"
-                    onClick={() => handleJoinRoom(joinRoomInput)}
-                  >
-                    Join
-                  </button>
-                </div>
-              </div>
+        {/* Viewer Banner (shown when viewing) */}
+        {isViewer && (
+          <div className="viewer-banner">
+            <div>👁 Viewing Live Scoreboard</div>
+          </div>
+        )}
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-accent border-opacity-30"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-primary text-gray-400">or</span>
-                </div>
-              </div>
+        {/* Setup Card */}
+        {!state.started && showRoomJoin && (
+          <div className="card">
+            <h2>Join or Create Game</h2>
 
-              <button
-                className="btn-primary w-full text-lg py-4"
-                onClick={handleCreateRoom}
-              >
+            {/* Create Room */}
+            <div className="mt-8">
+              <button className="btn" onClick={handleCreateRoom}>
                 Create New Game
               </button>
             </div>
-          </motion.div>
-        ) : !state.started ? (
+
+            {/* Join Room Section */}
+            <div className="join-section">
+              <label>Or join an existing game as viewer:</label>
+              <div className="row mt-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Enter room code"
+                    maxLength={6}
+                    style={{ textTransform: 'uppercase' }}
+                    value={joinRoomInput}
+                    onChange={(e) => setJoinRoomInput(e.target.value.toUpperCase())}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleJoinRoom(joinRoomInput);
+                      }
+                    }}
+                  />
+                </div>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => handleJoinRoom(joinRoomInput)}
+                >
+                  Join
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Setup Component */}
+        {!state.started && !showRoomJoin && (
           <Setup
             state={state}
             onStateChange={handleStateChange}
             onStartGame={handleStartGame}
           />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="card"
-              >
-                <Scoreboard
-                  state={state}
-                  onRollOffReorder={handleRollOffReorder}
-                  isViewer={isViewer}
-                />
-              </motion.div>
+        )}
 
-              {!isViewer && !state.gameComplete && (
-                <>
-                  {state.rollOffSetupMode && (state.phase === 'winRollOff' || state.phase === 'lastRollOff') ? (
-                    <motion.button
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="btn-primary w-full text-lg py-4"
-                      onClick={handleStartRollOff}
-                    >
+        {/* Game Content */}
+        {state.started && (
+          <>
+            {/* Scoreboard */}
+            <div className="scoreboard">
+              <Scoreboard
+                state={state}
+                onRollOffReorder={handleRollOffReorder}
+                isViewer={isViewer}
+              />
+            </div>
+
+            {/* Controls */}
+            {!isViewer && !state.gameComplete && (
+              <>
+                {state.rollOffSetupMode && (state.phase === 'winRollOff' || state.phase === 'lastRollOff') ? (
+                  <div className="mt-6 text-center">
+                    <div className="muted mb-4">Use ▲▼ arrows to set the roll-off order. #1 rolls first.</div>
+                    <button className="btn" onClick={handleStartRollOff}>
                       Start Roll-Off
-                    </motion.button>
-                  ) : (
-                    <TurnEntry onSubmit={handleTurnSubmit} disabled={isViewer} />
-                  )}
-                </>
-              )}
+                    </button>
+                  </div>
+                ) : (
+                  <TurnEntry onSubmit={handleTurnSubmit} disabled={isViewer} />
+                )}
+              </>
+            )}
 
-              {state.gameComplete && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="card text-center space-y-6"
-                >
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Ultimate Winner</p>
-                      <p className="text-3xl font-bold text-success">
-                        {state.players.find(p => p.id === state.ultimateWinnerId)?.name}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400 mb-1">Takes Shot</p>
-                      <p className="text-3xl font-bold text-highlight">
-                        {state.players.find(p => p.id === state.loserId)?.name}
-                      </p>
+            {/* Game Complete */}
+            {state.gameComplete && (
+              <div style={{
+                display: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.9)',
+                zIndex: 3000,
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+              }}>
+                <div style={{
+                  background: 'radial-gradient(circle at top, #0a1f28, #020509 70%)',
+                  borderRadius: '20px',
+                  border: '3px solid var(--accent)',
+                  boxShadow: '0 0 40px rgba(29,214,143,0.3)',
+                  padding: '30px 40px',
+                  textAlign: 'center',
+                  maxWidth: '400px',
+                  width: '90%',
+                }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🏆</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent)', marginBottom: '5px' }}>GAME OVER</div>
+                  <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, var(--accent), transparent)', margin: '15px 0' }}></div>
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ultimate Winner</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--accent)', marginTop: '5px' }}>
+                      {state.players.find(p => p.id === state.ultimateWinnerId)?.name || '-'}
                     </div>
                   </div>
-
+                  <div style={{ marginBottom: '25px' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Takes the Shot 🥃</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--danger)', marginTop: '5px' }}>
+                      {state.players.find(p => p.id === state.loserId)?.name || '-'}
+                    </div>
+                  </div>
                   {!isViewer && (
-                    <button
-                      className="btn-primary w-full text-lg py-4"
-                      onClick={handleNewGame}
-                    >
-                      Start New Game
+                    <button className="btn" onClick={handleNewGame} style={{ width: '100%' }}>
+                      New Game
                     </button>
                   )}
-                </motion.div>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
 
-            <div>
-              <GameLog logs={logs} />
+            {/* Game Log */}
+            <div className="card">
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ marginBottom: 0 }}>Game Tracker</h2>
+                {!isViewer && (
+                  <button className="btn btn-danger btn-sm" onClick={() => window.location.reload()}>
+                    End Game
+                  </button>
+                )}
+              </div>
+              <div className="log">
+                {logs.map((log, idx) => (
+                  <div key={idx} className={`log-entry ${log.type === 'system' ? 'system-message' : ''}`}>
+                    <strong>{log.type === 'drink' ? '🥤' : log.type === 'social' ? '🎉' : 'ℹ️'}</strong> {log.message}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          </>
         )}
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="app-footer">
+        <img src="Triple Snakes-B5.png" alt="Triple Snakes footer logo" className="logo-bottom" />
+      </footer>
     </div>
   );
 }
