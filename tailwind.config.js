@@ -7,11 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#1a1a2e',
-        secondary: '#16213e',
-        accent: '#0f3460',
-        highlight: '#e94560',
-        success: '#00d4ff',
+        primary: '#041014',
+        secondary: '#0c1f26',
+        accent: '#1dd68f',
+        accentSoft: '#0c3a2a',
+        text: '#f4f9fb',
+        muted: '#88a0aa',
+        danger: '#ff4b6a',
+        warning: '#ffd166',
+        highlight: '#1dd68f',
+        success: '#1dd68f',
       },
       animation: {
         'pulse-highlight': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
