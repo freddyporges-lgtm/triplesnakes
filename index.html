@@ -1,13 +1,1598 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>triplesnakes-react</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <title>Triple Snakes Scorekeeper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg: #041014;
+      --card: #0c1f26;
+      --accent: #1dd68f;
+      --accent-soft: #0c3a2a;
+      --text: #f4f9fb;
+      --muted: #88a0aa;
+      --danger: #ff4b6a;
+      --warning: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #062530, #02080b 60%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .app-shell { flex: 1; display: flex; flex-direction: column; align-items: stretch; }
+    .app {
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 4px 12px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .app-header, .app-footer { display: flex; justify-content: center; align-items: center; padding: 2px 0; }
+    .logo-top { max-width: 360px; width: 80%; height: auto; display: block; }
+    .logo-bottom { max-width: 180px; width: 60%; height: auto; display: block; }
+    @media (max-width: 480px) {
+      .logo-top { max-width: 300px; }
+      .logo-bottom { max-width: 150px; }
+    }
+    h1 { font-size: 1.2rem; margin: 4px 0 2px; text-align: center; }
+    .tagline { font-size: 0.8rem; color: var(--muted); text-align: center; margin-bottom: 8px; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 0.8rem; color: var(--muted); }
+    input, select {
+      border-radius: 999px;
+      border: 1px solid #21444f;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      background: #051419;
+      color: var(--text);
+      width: 100%;
+    }
+    input[type="number"] { text-align: center; }
+    input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #012016;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .btn:active { transform: translateY(1px); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+    .btn-secondary { background: transparent; color: var(--muted); border: 1px solid #21444f; box-shadow: none; }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(255,75,106,0.5); box-shadow: none; }
+    .btn-sm { padding: 8px 12px; font-size: 0.8rem; min-height: 40px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;
+      border-radius: 999px; font-size: 0.7rem; background: var(--accent-soft); color: var(--accent);
+    }
+    .pill-danger { background: rgba(255, 75, 106, 0.12); color: var(--danger); }
+    .pill-warning { background: rgba(255, 209, 102, 0.16); color: var(--warning); }
+    .players-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+    .player-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 8px; border-radius: 999px; background: #07171d;
+    }
+    .player-main { display: flex; align-items: center; gap: 6px; }
+    .score { font-weight: 700; letter-spacing: 0.03em; }
+    .leader { color: var(--accent); }
+    .current-turn { border: 1px solid var(--accent); box-shadow: 0 0 0 1px rgba(29,214,143,0.28); }
+    .log { max-height: 200px; overflow-y: auto; font-size: 0.78rem; }
+    .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .log-entry strong { font-weight: 600; }
+    .log-entry.system-message { color: #39ff14; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .chip { font-size: 0.7rem; padding: 3px 7px; border-radius: 999px; background: #07171d; color: var(--muted); }
+    .flex-1 { flex: 1; }
+    .mt-4 { margin-top: 4px; }
+    .mt-6 { margin-top: 6px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-10 { margin-top: 10px; }
+    .muted { color: var(--muted); font-size: 0.78rem; }
+    .divider { height: 1px; background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%); margin: 8px 0; }
+    .radio-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .radio-pill {
+      border-radius: 999px; padding: 8px 10px; border: 1px solid #21444f; font-size: 0.8rem;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    }
+    .radio-pill input { width: auto; margin: 0; }
+    .radio-pill.selected {
+      border-color: var(--accent); background: rgba(29,214,143,0.12); color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5); transform: translateY(-1px);
+    }
+    .cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 360px) { h1 { font-size: 1.1rem; } }
+    .scoreboard {
+      position: relative; background: radial-gradient(circle at top, #050b12, #020509 70%);
+      border-radius: 18px; padding: 14px 12px 10px; margin-bottom: 10px;
+      box-shadow: 0 0 0 2px #11161d, 0 0 0 4px #202733, 0 14px 28px rgba(0,0,0,0.65);
+      border: 2px solid #202733;
+    }
+    .scoreboard-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .scoreboard-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.12em; color: #b8c4cc; }
+    .scoreboard-meta { display: flex; flex-direction: column; align-items: flex-end; font-size: 0.75rem; color: var(--muted); }
+    .scoreboard-target-value { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.06em; }
+    .scoreboard-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .scoreboard-body { margin-top: 8px; }
+    .scoreboard-players { margin-top: 4px; }
+    .scoreboard .player-row { background: #050c11; border-radius: 10px; padding: 6px 10px; }
+    .scoreboard .current-turn { border-radius: 10px; }
+    .round-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 6px; }
+    .round-table th, .round-table td { border: 1px solid #1a2a33; padding: 4px 6px; text-align: center; }
+    .round-table th { background: #07171d; color: var(--muted); position: sticky; top: 0; z-index: 1; }
+    .round-table td.player-name { text-align: left; font-weight: 600; background: #050c11; }
+    .round-table-wrapper { max-height: 220px; overflow: auto; margin-top: 4px; }
+    .dice-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .die-btn { padding: 0; border: none; background: transparent; cursor: pointer; border-radius: 10px; }
+    .die-btn .die { width: 44px; height: 44px; }
+    .die-btn.selected .die { box-shadow: 0 0 0 2px var(--accent); }
+    .match-count-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+    .match-count-btn, .toggle-btn {
+      position: relative; border-radius: 999px; border: 1px solid #21444f; background: transparent;
+      color: var(--muted); box-shadow: none; padding: 8px 12px; font-size: 0.8rem; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
+    }
+    .match-count-btn.selected, .toggle-btn.toggle-on {
+      border-color: var(--accent); background: rgba(29,214,143,0.12); color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 6px rgba(29,214,143,0.5); transform: translateY(-1px);
+    }
+    .die {
+      background: #fff; border-radius: 8px; border: 2px solid #333;
+      display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+      padding: 4px; box-sizing: border-box;
+    }
+    .pip { width: 6px; height: 6px; border-radius: 50%; background: #333; margin: auto; }
+    .pos-1 { grid-area: 1 / 1; } .pos-2 { grid-area: 1 / 2; } .pos-3 { grid-area: 1 / 3; }
+    .pos-4 { grid-area: 2 / 1; } .pos-5 { grid-area: 2 / 2; } .pos-6 { grid-area: 2 / 3; }
+    .pos-7 { grid-area: 3 / 1; } .pos-8 { grid-area: 3 / 2; } .pos-9 { grid-area: 3 / 3; }
+    .toggle-btn { min-width: 140px; justify-content: center; }
+    .toggle-off { background: transparent; color: var(--muted); border: 1px solid #21444f; box-shadow: none; }
+    .hof-toggle-btn {
+      width: 100%; margin: 10px 0 4px; border-radius: 999px; border: 1px solid var(--accent);
+      background: rgba(29,214,143,0.16); color: var(--accent); font-size: 0.95rem; font-weight: 600;
+      padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; min-height: 44px;
+    }
+    .hof-toggle-btn:hover { background: rgba(29,214,143,0.26); }
+    #hall-of-fame {
+      margin: 8px 0 0; padding: 10px; background-color: #050c11; border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid #21444f; display: none;
+    }
+    #hall-of-fame h2 { text-align: center; margin: 0 0 10px; font-size: 1rem; color: var(--accent); }
+    .hof-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+    .hof-card { border-radius: 8px; padding: 8px; text-align: center; background-color: #07171d; border: 1px solid #21444f; }
+    .hof-card h3 { margin: 0 0 4px; font-size: 0.84rem; color: var(--text); }
+    .hof-value { font-size: 1.1rem; font-weight: 700; margin: 2px 0; color: var(--accent); }
+    .hof-holder, .hof-date { margin: 1px 0; font-size: 0.75rem; color: var(--muted); }
+    #eventToast {
+      position: fixed; border-radius: 18px; border: 2px solid var(--accent);
+      box-shadow: 0 0 0 2px #11161d, 0 0 0 4px #202733, 0 14px 28px rgba(0,0,0,0.85);
+      z-index: 2000; display: none; box-sizing: border-box; overflow: hidden; background: #000;
+    }
+    #eventToastInner {
+      width: 100%; height: 100%; background-color: #000; background-image: url("Triple Snakes-B5.png");
+      background-repeat: repeat; background-size: 80px 80px; display: flex; align-items: center;
+      justify-content: center; padding: 12px; box-sizing: border-box;
+    }
+    #eventToastText {
+      max-width: 82%; width: 82%; padding: 10px 12px; border-radius: 14px; background: rgba(0, 0, 0, 0.92);
+      color: #00ffc8; font-size: 1rem; font-weight: 800; text-align: center; text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+    }
+    @media (max-width: 480px) {
+      .app { padding: 6px 8px 12px; }
+      .card { padding: 10px 10px; margin-bottom: 8px; }
+      .scoreboard { padding: 12px 10px 8px; }
+      .radio-row { gap: 4px; }
+      .radio-pill { font-size: 0.78rem; }
+      .hof-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.1rem; }
+      .scoreboard-title { font-size: 0.85rem; }
+    }
+    /* Room/Viewer styles */
+    .room-banner {
+      background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 10px; text-align: center;
+    }
+    .room-code { font-size: 1.4rem; font-weight: 700; color: var(--accent); letter-spacing: 0.15em; }
+    .room-link { font-size: 0.75rem; color: var(--muted); word-break: break-all; margin-top: 4px; }
+    .viewer-banner {
+      background: rgba(255, 209, 102, 0.15); border: 1px solid var(--warning); border-radius: 10px;
+      padding: 8px 12px; margin-bottom: 10px; text-align: center; color: var(--warning); font-weight: 600;
+    }
+    .join-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid #21444f; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <img src="Triple Snakes-B3.png" alt="Triple Snakes header logo" class="logo-top" />
+  </header>
+
+  <main class="app">
+    <h1>Triple Snakes Scorekeeper</h1>
+    <div class="tagline">Smart scorekeeper for the Triple Snakes dice game.</div>
+
+    <!-- Room Banner (shown when hosting) -->
+    <div class="room-banner" id="roomBanner" style="display:none;">
+      <div>Room Code:</div>
+      <div class="room-code" id="roomCodeDisplay">----</div>
+      <div class="room-link" id="roomLinkDisplay"></div>
+      <button class="btn btn-sm mt-4" id="copyLinkBtn">Copy Link</button>
+    </div>
+
+    <!-- Viewer Banner (shown when viewing) -->
+    <div class="viewer-banner" id="viewerBanner" style="display:none;">
+      <div>👁 Viewing Live Scoreboard</div>
+      <button class="btn btn-sm mt-4" id="wakeLockBtn" style="background: transparent; border: 1px solid var(--warning); color: var(--warning);">
+        🔅 Keep Screen On
+      </button>
+      <div class="muted mt-4" id="wakeLockStatus"></div>
+    </div>
+
+    <div class="card" id="setupCard">
+      <h2>Players</h2>
+      <div class="row">
+        <div class="flex-1">
+          <label for="playerName">Add player</label>
+          <input id="playerName" type="text" placeholder="Name" />
+        </div>
+        <button class="btn btn-sm" id="addPlayerBtn">Add</button>
+      </div>
+      <div class="row mt-8">
+        <button class="btn" id="startGameBtn">Start Game</button>
+        <button class="btn btn-secondary btn-sm" id="resetGameBtn">Reset</button>
+      </div>
+      <div class="players-list" id="playersSetupList"></div>
+
+      <!-- Join Room Section -->
+      <div class="join-section">
+        <label>Or join an existing game as viewer:</label>
+        <div class="row mt-4">
+          <div class="flex-1">
+            <input id="joinRoomCode" type="text" placeholder="Enter room code" maxlength="6" style="text-transform: uppercase;" />
+          </div>
+          <button class="btn btn-secondary btn-sm" id="joinRoomBtn">Join</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="scoreboard" id="scoreCard" style="display:none;">
+      <div class="scoreboard-top">
+        <div>
+          <div class="scoreboard-title" id="scoreboardTitle">Triple Snakes Arena</div>
+          <div class="scoreboard-chips">
+            <span class="chip" id="roundChip">Round 1</span>
+            <span class="chip" id="phaseChip">Normal play</span>
+          </div>
+        </div>
+        <div class="scoreboard-meta">
+          <span>Target</span>
+          <span class="scoreboard-target-value" id="targetScoreLabel">100</span>
+        </div>
+      </div>
+      <div class="scoreboard-body">
+        <div class="players-list scoreboard-players" id="playersList"></div>
+        <div id="roundByRoundContainer" style="display:none;" class="round-table-wrapper"></div>
+        <div id="rollOffSetupControls" style="display:none; margin-top: 10px; text-align: center;">
+          <div class="muted" style="margin-bottom: 8px;">Use ▲▼ arrows to set the roll-off order. #1 rolls first.</div>
+          <button class="btn" id="startRollOffBtn">Start Roll-Off</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6" id="editScoreWrapper" style="display:none;">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <button class="btn btn-secondary btn-sm" id="editScoreBtn">Edit a Player's Score</button>
+        <button class="btn btn-secondary btn-sm" id="roundByRoundBtn" aria-pressed="false">Round by Round Scores</button>
+      </div>
+    </div>
+
+    <div class="card" id="turnCard" style="display:none;">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h2 style="margin-bottom:2px;">Current turn</h2>
+        <span class="pill" id="turnPlayerPill">Player ?</span>
+      </div>
+      <div class="muted">Enter what actually happened this turn. The app will handle scoring, busts, and drinking prompts.</div>
+
+      <div class="mt-8">
+        <label>Outcome type</label>
+        <div class="radio-row" id="outcomeTypeGroup">
+          <label class="radio-pill selected"><input type="radio" name="outcomeType" value="match" checked /> Match</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="doubleDouble" /> Double Double Match</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="fourKind" /> Four-of-a-kind</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="straight" /> Straight attempt</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="tripleSnakes" /> Triple Snakes</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="zeroPoints" /> Zero Points</label>
+          <label class="radio-pill"><input type="radio" name="outcomeType" value="bust77" /> Bust (77)</label>
+        </div>
+      </div>
+
+      <div id="matchFields" class="mt-8">
+        <h3 style="margin:0 0 4px;">Match</h3>
+        <div class="mt-4">
+          <label style="display:block; margin-bottom:4px;">Select Dice Face</label>
+          <div class="dice-picker" id="matchDicePicker">
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+          </div>
+        </div>
+        <div class="mt-6">
+          <label style="display:block; margin-bottom:4px;">How many matches</label>
+          <div class="match-count-picker" id="matchCountPicker">
+            <button type="button" class="match-count-btn" data-count="2">2x</button>
+            <button type="button" class="match-count-btn" data-count="3">3x</button>
+          </div>
+        </div>
+        <input id="matchFace1" type="hidden" />
+        <input id="matchCount1" type="hidden" />
+        <input id="matchFace2" type="hidden" />
+        <input id="matchCount2" type="hidden" />
+      </div>
+
+      <div id="doubleDoubleFields" class="mt-8" style="display:none;">
+        <h3 style="margin:0 0 4px;">Double Double Match</h3>
+        <div class="mt-4">
+          <label style="display:block; margin-bottom:4px;">First matching pair</label>
+          <div class="dice-picker" id="ddPair1Picker">
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+          </div>
+        </div>
+        <div class="mt-4">
+          <label style="display:block; margin-bottom:4px;">Second matching pair</label>
+          <div class="dice-picker" id="ddPair2Picker">
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+          </div>
+        </div>
+        <input id="ddPair1Face" type="hidden" />
+        <input id="ddPair2Face" type="hidden" />
+        <div class="mt-4 muted">Use when two different pairs are made on the final roll. Score follows your Double Double rules (sum of both pairs).</div>
+      </div>
+
+      <div id="fourKindFields" class="mt-8" style="display:none;">
+        <div>
+          <label style="display:block; margin-bottom:4px;">Four-of-a-kind face</label>
+          <div class="dice-picker" id="fourKindDicePicker">
+            <button type="button" class="die-btn" data-face="1" aria-label="Face 1"><div class="die"><div class="pip pos-5"></div></div></button>
+            <button type="button" class="die-btn" data-face="2" aria-label="Face 2"><div class="die"><div class="pip pos-1"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="3" aria-label="Face 3"><div class="die"><div class="pip pos-1"></div><div class="pip pos-5"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="4" aria-label="Face 4"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="5" aria-label="Face 5"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-5"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+            <button type="button" class="die-btn" data-face="6" aria-label="Face 6"><div class="die"><div class="pip pos-1"></div><div class="pip pos-3"></div><div class="pip pos-4"></div><div class="pip pos-6"></div><div class="pip pos-7"></div><div class="pip pos-9"></div></div></button>
+          </div>
+          <input id="fourKindFace" type="hidden" />
+        </div>
+        <div class="mt-6">
+          <label style="display:block; margin-bottom:4px;">Use bonus?</label>
+          <div class="match-count-picker" id="fourKindBonusGroup">
+            <button type="button" class="match-count-btn selected" data-mode="bonus">Yes (use bonus)</button>
+            <button type="button" class="match-count-btn" data-mode="normal">No (mathematical score)</button>
+          </div>
+          <input id="fourKindBonus" type="hidden" value="bonus" />
+        </div>
+        <div class="mt-4 muted">Bonus table: 1→30, 2→28, 3→27, 4→26, 5→25, 6→24 (or normal sum 4×face).</div>
+      </div>
+
+      <div id="straightFields" class="mt-8" style="display:none;">
+        <label>Straight attempt result</label>
+        <select id="straightResult">
+          <option value="success34">Completed straight, take 34</option>
+          <option value="success35">Completed straight, take 35</option>
+          <option value="fail">Failed (0 points)</option>
+        </select>
+        <div class="mt-4 muted">Only valid if the straight was from the first roll using the green die.</div>
+      </div>
+
+      <div id="tripleSnakesFields" class="mt-8" style="display:none;">
+        <div class="mt-4">
+          <label style="display:block; margin-bottom:8px;">Triple Snakes scoring</label>
+          <div class="match-count-picker" id="tripleSnakesToggle" style="margin-bottom:6px;">
+            <button type="button" class="match-count-btn selected" data-mode="tieLeader">Tie Current Leader</button>
+            <button type="button" class="match-count-btn" data-mode="3">Take 3 points</button>
+          </div>
+        </div>
+        <input id="tripleSnakesMode" type="hidden" value="tieLeader" />
+        <div class="mt-4 muted" id="tripleSnakesHelp">Tie-the-leader sets this player's total score equal to the current highest score on the board.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="mt-8 row" style="justify-content:space-between; align-items:center;">
+        <button class="btn" id="submitTurnBtn">Submit turn</button>
+        <button class="btn btn-secondary btn-sm" id="skipTurnBtn">Skip player</button>
+      </div>
+
+      <div class="mt-6 muted" id="turnHint"></div>
+    </div>
+
+    <div class="card" id="logCard" style="display:none;">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h2 style="margin-bottom:0;">Game Tracker</h2>
+        <button class="btn btn-danger btn-sm" id="endGameBtn">End Game</button>
+      </div>
+      <div class="log" id="logContainer"></div>
+    </div>
+
+    <button class="hof-toggle-btn" id="hofToggle">Hall of Fame</button>
+    <section id="hall-of-fame">
+      <h2>Hall of Fame</h2>
+      <div class="hof-grid">
+        <div class="hof-card"><h3>Fastest to Victory</h3><p class="hof-value">5 rounds</p><p class="hof-holder">Holder: Multiple</p></div>
+        <div class="hof-card"><h3>Lowest Score Recorded</h3><p class="hof-value">12 points</p><p class="hof-holder">Holder: Leah Dowd</p><p class="hof-date">Date: 2025-12-31</p></div>
+        <div class="hof-card"><h3>Most 0 Rounds in a Row</h3><p class="hof-value">6 rounds</p><p class="hof-holder">Holder: Kyle Dowd</p><p class="hof-date">Date: 2024-06-21</p></div>
+        <div class="hof-card"><h3>Highest Losing Score (4+ players)</h3><p class="hof-value">91</p><p class="hof-holder">Holder: Freddy Porges</p><p class="hof-date">Date: 2021-05-14</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <img src="Triple Snakes-B5.png" alt="Triple Snakes footer logo" class="logo-bottom" />
+  </footer>
+</div>
+
+<div id="eventToast" aria-live="polite" aria-atomic="true">
+  <div id="eventToastInner"><span id="eventToastText"></span></div>
+</div>
+
+<div id="gameOverBanner" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:3000; display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+  <div style="background: radial-gradient(circle at top, #0a1f28, #020509 70%); border-radius:20px; border:3px solid var(--accent); box-shadow: 0 0 40px rgba(29,214,143,0.3); padding:30px 40px; text-align:center; max-width:400px; width:90%;">
+    <div style="font-size:3rem; margin-bottom:10px;">🏆</div>
+    <div style="font-size:1.5rem; font-weight:800; color:var(--accent); margin-bottom:5px;">GAME OVER</div>
+    <div style="height:2px; background:linear-gradient(90deg, transparent, var(--accent), transparent); margin:15px 0;"></div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;">Ultimate Winner</div>
+      <div id="gameOverWinner" style="font-size:1.8rem; font-weight:700; color:var(--accent); margin-top:5px;">-</div>
+    </div>
+    <div style="margin-bottom:25px;">
+      <div style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;">Takes the Shot 🥃</div>
+      <div id="gameOverLoser" style="font-size:1.8rem; font-weight:700; color:var(--danger); margin-top:5px;">-</div>
+    </div>
+    <button class="btn" id="closeGameOverBtn" style="width:100%;">View Final Scores</button>
+    <button class="btn btn-secondary mt-8" id="newGameBtn" style="width:100%;">New Game</button>
+  </div>
+</div>
+
+<script>
+  // Firebase Configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDlvZtuNjL9lSGbac92BMjQQGzQLB0niaQ",
+    authDomain: "triple-snakes.firebaseapp.com",
+    databaseURL: "https://triple-snakes-default-rtdb.firebaseio.com",
+    projectId: "triple-snakes",
+    storageBucket: "triple-snakes.firebasestorage.app",
+    messagingSenderId: "610136499280",
+    appId: "1:610136499280:web:26a385e818aa558abf5d55"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // Room state
+  let currentRoomCode = null;
+  let isViewer = false;
+  let roomRef = null;
+
+  // Generate a random 6-character room code
+  function generateRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+
+  // Sync state to Firebase
+  function syncToFirebase() {
+    if (!currentRoomCode || isViewer) return;
+    const dataToSync = {
+      players: state.players,
+      target: state.target,
+      round: state.round,
+      currentIndex: state.currentIndex,
+      phase: state.phase,
+      winnerId: state.winnerId,
+      ultimateWinnerId: state.ultimateWinnerId,
+      loserId: state.loserId,
+      gameComplete: state.gameComplete,
+      roundScores: state.roundScores,
+      rebuttalTurnsTaken: state.rebuttalTurnsTaken,
+      rebuttalHit100Order: state.rebuttalHit100Order,
+      rollOffPlayerIds: state.rollOffPlayerIds,
+      rollOffIndex: state.rollOffIndex,
+      rollOffSetupMode: state.rollOffSetupMode,
+      rollOffRoundComplete: state.rollOffRoundComplete,
+      lastUpdate: Date.now()
+    };
+    database.ref('rooms/' + currentRoomCode).set(dataToSync);
+  }
+
+  // Listen to Firebase for viewer updates
+  function listenToRoom(roomCode) {
+    roomRef = database.ref('rooms/' + roomCode);
+    roomRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        state.players = data.players || [];
+        state.target = data.target || 100;
+        state.round = data.round || 1;
+        state.currentIndex = data.currentIndex || 0;
+        state.phase = data.phase || 'normal';
+        state.winnerId = data.winnerId || null;
+        state.ultimateWinnerId = data.ultimateWinnerId || null;
+        state.loserId = data.loserId || null;
+        state.gameComplete = data.gameComplete || false;
+        state.roundScores = data.roundScores || [];
+        state.rebuttalTurnsTaken = data.rebuttalTurnsTaken || 0;
+        state.rebuttalHit100Order = data.rebuttalHit100Order || [];
+        state.rollOffPlayerIds = data.rollOffPlayerIds || [];
+        state.rollOffIndex = data.rollOffIndex || 0;
+        state.rollOffSetupMode = data.rollOffSetupMode || false;
+        state.rollOffRoundComplete = data.rollOffRoundComplete || false;
+        renderScoreboard();
+        
+        // Show game over banner for viewers too
+        if (state.gameComplete && state.ultimateWinnerId && state.loserId) {
+          showGameOverBanner();
+        }
+      }
+    });
+  }
+
+  // Check URL for room code on load
+  function checkUrlForRoom() {
+    const params = new URLSearchParams(window.location.search);
+    const roomCode = params.get('room');
+    if (roomCode) {
+      joinRoom(roomCode.toUpperCase());
+    }
+  }
+
+  // Join a room as viewer
+  function joinRoom(roomCode) {
+    database.ref('rooms/' + roomCode).once('value').then((snapshot) => {
+      if (snapshot.exists()) {
+        currentRoomCode = roomCode;
+        isViewer = true;
+        setupCard.style.display = 'none';
+        scoreCard.style.display = 'block';
+        viewerBanner.style.display = 'block';
+        listenToRoom(roomCode);
+      } else {
+        alert('Room not found. Check the code and try again.');
+      }
+    });
+  }
+
+  // Create a new room
+  function createRoom() {
+    currentRoomCode = generateRoomCode();
+    isViewer = false;
+    roomBanner.style.display = 'block';
+    roomCodeDisplay.textContent = currentRoomCode;
+    const roomUrl = window.location.origin + window.location.pathname + '?room=' + currentRoomCode;
+    roomLinkDisplay.textContent = roomUrl;
+    syncToFirebase();
+  }
+
+  const state = {
+    players: [],
+    target: 100,
+    round: 1,
+    currentIndex: 0,
+    started: false,
+    phase: "normal",
+    winnerId: null,
+    ultimateWinnerId: null,
+    loserId: null,
+    gameComplete: false,
+    consecutiveZeroTurnsInRound: 0,
+    turnsThisRound: 0,
+    lastLeaderId: null,
+    roundScores: [],
+    showRoundByRound: false,
+    rebuttalTurnsTaken: 0,
+    rebuttalHit100Order: [],
+    rollOffPlayerIds: [],
+    rollOffIndex: 0,
+    rollOffSetupMode: false,
+    rollOffRoundComplete: false
+  };
+
+  const qs = (sel) => document.querySelector(sel);
+  const setupCard = qs("#setupCard");
+  const scoreCard = qs("#scoreCard");
+  const turnCard = qs("#turnCard");
+  const logCard = qs("#logCard");
+  const playersSetupList = qs("#playersSetupList");
+  const playersList = qs("#playersList");
+  const roundChip = qs("#roundChip");
+  const phaseChip = qs("#phaseChip");
+  const turnPlayerPill = qs("#turnPlayerPill");
+  const logContainer = qs("#logContainer");
+  const targetScoreLabel = qs("#targetScoreLabel");
+  const turnHint = qs("#turnHint");
+  const roundByRoundContainer = qs("#roundByRoundContainer");
+  const scoreboardTitle = qs("#scoreboardTitle");
+  const roundByRoundBtn = qs("#roundByRoundBtn");
+  const endGameBtn = qs("#endGameBtn");
+  const roomBanner = qs("#roomBanner");
+  const viewerBanner = qs("#viewerBanner");
+  const roomCodeDisplay = qs("#roomCodeDisplay");
+  const roomLinkDisplay = qs("#roomLinkDisplay");
+
+  const hofToggleBtn = qs("#hofToggle");
+  const hofSection = qs("#hall-of-fame");
+  hofToggleBtn.addEventListener("click", () => {
+    const isHidden = hofSection.style.display === "none" || hofSection.style.display === "";
+    hofSection.style.display = isHidden ? "block" : "none";
+    if (isHidden) hofSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  const eventToast = qs("#eventToast");
+  const eventToastText = qs("#eventToastText");
+  let toastTimeout;
+  const toastQueue = [];
+  let toastActive = false;
+
+  function positionEventToast() {
+    if (!eventToast || !scoreCard) return;
+    const rect = scoreCard.getBoundingClientRect();
+    eventToast.style.top = rect.top + "px";
+    eventToast.style.left = rect.left + "px";
+    eventToast.style.width = rect.width + "px";
+    eventToast.style.height = rect.height + "px";
+  }
+
+  function showEventToast(message) {
+    positionEventToast();
+    eventToastText.textContent = message;
+    eventToast.style.display = "block";
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      eventToast.style.display = "none";
+      toastActive = false;
+      if (toastQueue.length > 0) startToast(toastQueue.shift());
+    }, 3000);
+  }
+
+  function startToast(message) { toastActive = true; showEventToast(message); }
+  function queueToast(message) {
+    if (!eventToast || !scoreCard) return;
+    if (toastActive) toastQueue.push(message);
+    else startToast(message);
+  }
+  
+  function showGameOverBanner() {
+    const gameOverBanner = qs("#gameOverBanner");
+    const winnerEl = qs("#gameOverWinner");
+    const loserEl = qs("#gameOverLoser");
+    const newGameBtn = qs("#newGameBtn");
+    
+    const winner = state.players.find(p => p.id === state.ultimateWinnerId);
+    const loser = state.players.find(p => p.id === state.loserId);
+    
+    winnerEl.textContent = winner ? winner.name : "-";
+    loserEl.textContent = loser ? loser.name : "-";
+    
+    // Hide new game button for viewers
+    newGameBtn.style.display = isViewer ? "none" : "block";
+    
+    gameOverBanner.style.display = "flex";
+    syncToFirebase();
+  }
+  
+  function hideGameOverBanner() {
+    const gameOverBanner = qs("#gameOverBanner");
+    gameOverBanner.style.display = "none";
+  }
+
+  window.addEventListener("resize", () => { if (eventToast.style.display === "block") positionEventToast(); });
+  window.addEventListener("scroll", () => { if (eventToast.style.display === "block") positionEventToast(); });
+
+  function renderSetupPlayers() {
+    playersSetupList.innerHTML = "";
+    state.players.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "player-row";
+      div.innerHTML = `<div>${p.name}</div><button class="btn btn-secondary btn-sm" data-remove="${i}">Remove</button>`;
+      playersSetupList.appendChild(div);
+    });
+    playersSetupList.querySelectorAll("[data-remove]").forEach(btn => {
+      btn.onclick = () => { state.players.splice(parseInt(btn.dataset.remove, 10), 1); renderSetupPlayers(); };
+    });
+  }
+
+  function getLeaderId() {
+    if (state.players.length === 0) return null;
+    let best = state.players[0];
+    state.players.forEach(p => { if (p.score > best.score) best = p; });
+    const leaders = state.players.filter(p => p.score === best.score);
+    return leaders.length === 1 ? best.id : null;
+  }
+
+  function getLeaderScore() {
+    if (state.players.length === 0) return 0;
+    return Math.max(...state.players.map(p => p.score));
+  }
+
+  function renderScoreboardNormal() {
+    playersList.innerHTML = "";
+    const leaderId = getLeaderId();
+    const inRollOff = state.phase === "winRollOff" || state.phase === "lastRollOff";
+    
+    // During roll-offs, show players in roll-off order
+    let playersToShow = state.players;
+    if (inRollOff && state.rollOffPlayerIds.length > 0) {
+      // Show roll-off players first in their order, then others
+      const rollOffPlayers = state.rollOffPlayerIds.map(id => state.players.find(p => p.id === id)).filter(Boolean);
+      const otherPlayers = state.players.filter(p => !state.rollOffPlayerIds.includes(p.id));
+      playersToShow = [...rollOffPlayers, ...otherPlayers];
+    }
+    
+    playersToShow.forEach((p, displayIndex) => {
+      const div = document.createElement("div");
+      const isInRollOff = inRollOff && state.rollOffPlayerIds.includes(p.id);
+      const rollOffPosition = isInRollOff ? state.rollOffPlayerIds.indexOf(p.id) : -1;
+      const currentRollOffPlayerId = inRollOff && !state.rollOffSetupMode ? state.rollOffPlayerIds[state.rollOffIndex] : null;
+      const isCurrentTurn = inRollOff ? (p.id === currentRollOffPlayerId) : (state.players.indexOf(p) === state.currentIndex);
+      
+      div.className = "player-row" + (isCurrentTurn ? " current-turn" : "");
+      const scoreClass = "score" + (p.id === leaderId ? " leader" : "");
+      
+      let badges = "";
+      
+      // During roll-off setup, show order number and up/down arrows (scorekeeper only)
+      if (isInRollOff && state.rollOffSetupMode) {
+        const orderNum = rollOffPosition + 1;
+        const isFirst = rollOffPosition === 0;
+        const isLast = rollOffPosition === state.rollOffPlayerIds.length - 1;
+        
+        badges += `<span class="chip" style="margin-left:4px;">#${orderNum}</span>`;
+        
+        // Only show arrows for scorekeeper, not viewers
+        if (!isViewer) {
+          badges += `<button class="reorder-btn" data-player-id="${p.id}" data-direction="up" ${isFirst ? 'disabled' : ''} style="margin-left:4px; padding:2px 6px; font-size:0.7rem; cursor:${isFirst ? 'not-allowed' : 'pointer'}; opacity:${isFirst ? '0.3' : '1'}; background:transparent; border:1px solid var(--muted); border-radius:4px; color:var(--text);">▲</button>`;
+          badges += `<button class="reorder-btn" data-player-id="${p.id}" data-direction="down" ${isLast ? 'disabled' : ''} style="padding:2px 6px; font-size:0.7rem; cursor:${isLast ? 'not-allowed' : 'pointer'}; opacity:${isLast ? '0.3' : '1'}; background:transparent; border:1px solid var(--muted); border-radius:4px; color:var(--text);">▼</button>`;
+        }
+      } else if (isInRollOff) {
+        // During actual roll-off play, just show order number
+        const orderNum = rollOffPosition + 1;
+        badges += `<span class="chip" style="margin-left:4px;">#${orderNum}</span>`;
+      }
+      
+      // Show winner badges
+      const hasTiedWinners = state.rebuttalHit100Order.length > 0;
+      
+      if (p.id === state.ultimateWinnerId) {
+        // Ultimate winner after roll-off or clean rebuttal win
+        badges += '<span class="pill" style="margin-left:4px; background: rgba(29,214,143,0.2); color: var(--accent);">🏆 Ultimate Winner</span>';
+      } else if (p.id === state.winnerId && state.phase !== "normal") {
+        if (hasTiedWinners) {
+          // Original winner when there are tied winners - green
+          badges += '<span class="pill" style="margin-left:4px; background: rgba(29,214,143,0.2); color: var(--accent);">Original Winner</span>';
+        } else if (!state.ultimateWinnerId) {
+          // Just "Winner" in green if no ties yet and no ultimate winner
+          badges += '<span class="pill" style="margin-left:4px; background: rgba(29,214,143,0.2); color: var(--accent);">Winner</span>';
+        }
+      }
+      
+      // Show "Tied Winner" badge for players who tied during rebuttal (yellow)
+      if (state.rebuttalHit100Order.includes(p.id) && p.id !== state.winnerId && p.id !== state.ultimateWinnerId) {
+        badges += '<span class="pill-warning" style="margin-left:4px;">Tied Winner</span>';
+      }
+      
+      // Show loser badge
+      if (p.id === state.loserId && state.gameComplete) {
+        badges += '<span class="pill-danger" style="margin-left:4px;">🥃 Takes Shot</span>';
+      }
+      // Show "Spectating" for players not in roll-off
+      if (inRollOff && !isInRollOff) {
+        badges += '<span class="chip" style="margin-left:4px; opacity: 0.5;">Spectating</span>';
+      }
+      
+      div.innerHTML = `<div class="player-main"><span>${p.name}</span>${badges}</div><div><span class="${scoreClass}">${p.score}</span></div>`;
+      playersList.appendChild(div);
+    });
+    
+    // Add event listeners for reorder buttons (scorekeeper only)
+    if (inRollOff && state.rollOffSetupMode && !isViewer) {
+      playersList.querySelectorAll('.reorder-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const playerId = btn.dataset.playerId;
+          const direction = btn.dataset.direction;
+          reorderRollOffPlayer(playerId, direction);
+        };
+      });
+    }
+    
+    playersList.style.display = "flex";
+    roundByRoundContainer.style.display = "none";
+    scoreboardTitle.textContent = inRollOff ? (state.phase === "winRollOff" ? "Winner's Roll-Off" : "Loser's Roll-Off") : "Triple Snakes Arena";
+    roundByRoundBtn.textContent = "Round by Round Scores";
+    roundByRoundBtn.setAttribute("aria-pressed", "false");
+  }
+  
+  function reorderRollOffPlayer(playerId, direction) {
+    const currentIndex = state.rollOffPlayerIds.indexOf(playerId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= state.rollOffPlayerIds.length) return;
+    
+    // Swap positions
+    const temp = state.rollOffPlayerIds[currentIndex];
+    state.rollOffPlayerIds[currentIndex] = state.rollOffPlayerIds[newIndex];
+    state.rollOffPlayerIds[newIndex] = temp;
+    
+    renderScoreboard();
+    syncToFirebase();
+  }
+
+  function renderScoreboardRoundByRound() {
+    const maxRound = state.roundScores.length ? Math.max(...state.roundScores.map(r => r.round)) : state.round - 1;
+    if (maxRound <= 0) {
+      roundByRoundContainer.innerHTML = "<div class='muted'>No completed rounds yet.</div>";
+    } else {
+      const roundMap = {};
+      state.roundScores.forEach(r => { roundMap[r.round] = r.scores; });
+      let html = "<table class='round-table'><thead><tr><th>Player</th>";
+      for (let r = 1; r <= maxRound; r++) html += `<th>R${r}</th>`;
+      html += "</tr></thead><tbody>";
+      state.players.forEach(p => {
+        html += `<tr><td class="player-name">${p.name}</td>`;
+        for (let r = 1; r <= maxRound; r++) {
+          const val = (roundMap[r] || {})[p.id];
+          html += `<td>${typeof val === "number" ? val : "-"}</td>`;
+        }
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+      roundByRoundContainer.innerHTML = html;
+    }
+    playersList.style.display = "none";
+    roundByRoundContainer.style.display = "block";
+    scoreboardTitle.textContent = "Round by Round Scores";
+    roundByRoundBtn.textContent = "Return to Scoreboard";
+    roundByRoundBtn.setAttribute("aria-pressed", "true");
+  }
+
+  function renderScoreboard() {
+    if (state.showRoundByRound) renderScoreboardRoundByRound();
+    else renderScoreboardNormal();
+    
+    const inRollOff = state.phase === "winRollOff" || state.phase === "lastRollOff";
+    const rollOffSetupControls = qs("#rollOffSetupControls");
+    
+    // Show/hide roll-off setup controls (only for scorekeeper, not viewers)
+    if (inRollOff && state.rollOffSetupMode && !isViewer) {
+      rollOffSetupControls.style.display = "block";
+      turnCard.style.display = "none"; // Hide turn card during setup
+    } else if (state.gameComplete) {
+      rollOffSetupControls.style.display = "none";
+      turnCard.style.display = "none"; // Hide turn card when game is over
+    } else {
+      rollOffSetupControls.style.display = "none";
+      if (state.started && !isViewer) {
+        turnCard.style.display = "block";
+      }
+    }
+    
+    // Update round chip based on phase
+    if (state.gameComplete) {
+      roundChip.textContent = `Final`;
+    } else if (inRollOff && !state.rollOffSetupMode) {
+      roundChip.textContent = `Turn ${state.rollOffIndex + 1} of ${state.rollOffPlayerIds.length}`;
+    } else if (inRollOff && state.rollOffSetupMode) {
+      roundChip.textContent = `Setup`;
+    } else {
+      roundChip.textContent = `Round ${state.round}`;
+    }
+    
+    let phaseText = { normal: "Normal play" }[state.phase] || "";
+    if (state.gameComplete) {
+      phaseText = "Game Over";
+    } else if (state.phase === "rebuttal") {
+      const remaining = (state.players.length - 1) - state.rebuttalTurnsTaken;
+      phaseText = `Rebuttal (${remaining} left)`;
+    } else if (state.phase === "winRollOff") {
+      phaseText = state.rollOffSetupMode ? `Winner's Roll-Off (Set Order)` : `Winner's Roll-Off`;
+    } else if (state.phase === "lastRollOff") {
+      phaseText = state.rollOffSetupMode ? `Loser's Roll-Off (Set Order)` : `Loser's Roll-Off`;
+    }
+    phaseChip.textContent = phaseText;
+    
+    // Get current player based on phase
+    let currentPlayer;
+    if (state.gameComplete) {
+      currentPlayer = null;
+    } else if (inRollOff && !state.rollOffSetupMode) {
+      const currentId = state.rollOffPlayerIds[state.rollOffIndex];
+      currentPlayer = state.players.find(p => p.id === currentId);
+    } else if (inRollOff && state.rollOffSetupMode) {
+      currentPlayer = null; // No current player during setup
+    } else {
+      currentPlayer = state.players[state.currentIndex];
+    }
+    turnPlayerPill.textContent = currentPlayer ? currentPlayer.name : (state.gameComplete ? "Complete" : (state.rollOffSetupMode ? "Set Order" : "Player ?"));
+    targetScoreLabel.textContent = state.target;
+  }
+
+  function addLog(msg, type = "info") {
+    const div = document.createElement("div");
+    div.className = "log-entry";
+    let badge = "";
+    if (type === "drink") badge = ' <span class="pill pill-warning">Drink</span>';
+    else if (type === "social") badge = ' <span class="pill pill-danger">Social</span>';
+    else if (type === "system") { badge = ' <span class="pill">Game</span>'; div.classList.add("system-message"); }
+    div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>${badge} – ${msg}`;
+    logContainer.prepend(div);
+  }
+
+  function snapshotRoundTotals() {
+    const scores = {};
+    state.players.forEach(p => { scores[p.id] = p.score; });
+    state.roundScores = state.roundScores.filter(r => r.round !== state.round);
+    state.roundScores.push({ round: state.round, scores });
+  }
+
+  function getCompletedRoundsCount() { return state.roundScores.length; }
+
+  function advanceTurn() {
+    // Handle roll-off phases separately - only cycle through roll-off players
+    if ((state.phase === "winRollOff" || state.phase === "lastRollOff") && !state.rollOffSetupMode) {
+      state.rollOffIndex++;
+      if (state.rollOffIndex >= state.rollOffPlayerIds.length) {
+        state.rollOffIndex = 0; // Loop back for another round
+        state.rollOffRoundComplete = true; // Mark that everyone has rolled
+        addLog(`Roll-off round complete. Checking results...`, "system");
+        
+        // Evaluate after complete round
+        checkRollOffResults();
+      }
+      renderScoreboard();
+      syncToFirebase();
+      return;
+    }
+    
+    state.currentIndex++;
+    state.turnsThisRound++;
+    
+    // In rebuttal phase, skip the winner's turn
+    if (state.phase === "rebuttal" && state.winnerId) {
+      const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
+      if (state.currentIndex === winnerIndex) {
+        state.currentIndex++;
+      }
+    }
+    
+    if (state.currentIndex >= state.players.length) {
+      snapshotRoundTotals();
+      state.currentIndex = 0;
+      state.round++;
+      state.turnsThisRound = 0;
+      state.consecutiveZeroTurnsInRound = 0;
+      
+      // After round wrap in rebuttal, skip winner if they're first
+      if (state.phase === "rebuttal" && state.winnerId) {
+        const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
+        if (state.currentIndex === winnerIndex) {
+          state.currentIndex++;
+        }
+      }
+      
+      if (state.round === 4 && state.phase === "normal") {
+        const msg = "Start of Round 4 -- Ties and Lead Change Drinks Now in Effect";
+        addLog(msg, "system");
+        queueToast(msg);
+      }
+    }
+    renderScoreboard();
+    syncToFirebase();
+  }
+  
+  function checkRollOffResults() {
+    if (state.phase === "winRollOff") {
+      const maxScore = Math.max(...state.rollOffPlayerIds.map(id => state.players.find(p => p.id === id).score));
+      const leaders = state.rollOffPlayerIds.filter(id => state.players.find(p => p.id === id).score === maxScore);
+      
+      if (leaders.length === 1) {
+        const winnerPlayer = state.players.find(p => p.id === leaders[0]);
+        const winnerName = winnerPlayer.name;
+        
+        // Set ultimate winner
+        state.ultimateWinnerId = leaders[0];
+        
+        // Now check for loser's roll-off
+        const minScore = Math.min(...state.players.map(p => p.score));
+        const lastPlace = state.players.filter(p => p.score === minScore);
+        
+        if (lastPlace.length > 1) {
+          const rollOffIds = lastPlace.map(p => p.id);
+          
+          state.phase = "lastRollOff";
+          state.rollOffPlayerIds = rollOffIds;
+          state.rollOffIndex = 0;
+          state.rollOffSetupMode = true;
+          state.rollOffRoundComplete = false;
+          
+          const names = lastPlace.map(p => p.name).join(", ");
+          addLog(`🏆 ${winnerName} is the Ultimate Winner! Loser's Roll-Off begins. Participants: ${names}`, "system");
+          queueToast(`🏆 ${winnerName} wins! Loser's Roll-Off - set the order.`);
+        } else {
+          state.loserId = lastPlace[0].id;
+          state.gameComplete = true;
+          addLog(`🏆 ${winnerName} is the Ultimate Winner! ${lastPlace[0].name} takes the shot.`, "system");
+          showGameOverBanner();
+        }
+      } else {
+        // Still tied, continue roll-off
+        state.rollOffRoundComplete = false;
+        addLog(`Still tied! Roll-off continues.`, "system");
+        queueToast("Still tied! Roll-off continues.");
+      }
+    } else if (state.phase === "lastRollOff") {
+      // Get scores of all roll-off participants
+      const rollOffScores = state.rollOffPlayerIds.map(id => ({
+        id,
+        score: state.players.find(p => p.id === id).score
+      }));
+      
+      const maxScore = Math.max(...rollOffScores.map(p => p.score));
+      const minScore = Math.min(...rollOffScores.map(p => p.score));
+      
+      // If someone has more points than another (scores are different), the roll-off ends
+      if (maxScore !== minScore) {
+        const loser = rollOffScores.find(p => p.score === minScore);
+        const loserName = state.players.find(p => p.id === loser.id).name;
+        state.loserId = loser.id;
+        state.gameComplete = true;
+        addLog(`${loserName} loses the Loser's Roll-Off and takes the shot!`, "system");
+        showGameOverBanner();
+      } else {
+        // Still tied, continue roll-off
+        state.rollOffRoundComplete = false;
+        addLog(`Still tied for last! Roll-off continues.`, "system");
+        queueToast("Still tied! Roll-off continues.");
+      }
+    }
+  }
+
+  function applyScore(player, delta) {
+    const before = player.score;
+    let after = before + delta;
+    let bust = false;
+    // Can bust in normal play, rebuttal, and loser's roll-off - but NOT winner's roll-off
+    if (after > state.target && state.phase !== "winRollOff") {
+      bust = true;
+      after = 77;
+    }
+    player.score = after;
+    return { before, after, bust };
+  }
+
+  function handleLeaderAndTies(currentPlayer) {
+    const completedRounds = getCompletedRoundsCount();
+    if (state.phase === "normal" && completedRounds >= 3) {
+      const playersAtSame = state.players.filter(p => p.score === currentPlayer.score);
+      if (playersAtSame.length >= 2) {
+        const names = playersAtSame.map(p => p.name).join(" & ");
+        const msg = `${names} are tied at ${currentPlayer.score}. All tied players drink.`;
+        addLog(msg, "drink");
+        queueToast(msg);
+      }
+      const leaderId = getLeaderId();
+      if (leaderId && leaderId !== state.lastLeaderId) {
+        const leader = state.players.find(p => p.id === leaderId);
+        const others = state.players.filter(p => p.id !== leaderId);
+        if (others.length > 0) {
+          const msg = `Leader changed to ${leader.name}. All non-leaders drink.`;
+          addLog(msg, "drink");
+          queueToast(msg);
+        }
+        state.lastLeaderId = leaderId;
+      }
+    }
+  }
+
+  function checkZeroRoundGroupDrink() {
+    if (state.consecutiveZeroTurnsInRound >= state.players.length && state.phase === "normal") {
+      const msg = "All players netted 0 this round in consecutive turns. Group must shotgun or take a shot.";
+      addLog(msg, "social");
+      queueToast("Group 0 round – social drink!");
+      state.consecutiveZeroTurnsInRound = 0;
+    }
+  }
+
+  function evaluateWinState(player) {
+    if (state.phase === "normal") {
+      if (player.score === state.target && !state.winnerId) {
+        state.winnerId = player.id;
+        state.phase = "rebuttal";
+        state.rebuttalTurnsTaken = 0;
+        state.rebuttalHit100Order = [];
+        const msg = `${player.name} reached ${state.target}! Every other player gets ONE more roll.`;
+        addLog(msg, "system");
+        queueToast(`${player.name} hit ${state.target}! Rebuttal round.`);
+      }
+    } else if (state.phase === "rebuttal") {
+      // Track if this player just hit 100 during rebuttal
+      if (player.score === state.target && player.id !== state.winnerId && !state.rebuttalHit100Order.includes(player.id)) {
+        state.rebuttalHit100Order.push(player.id);
+        addLog(`${player.name} ties at ${state.target}!`, "system");
+        queueToast(`${player.name} ties at ${state.target}!`);
+      }
+      
+      // Count this turn if it's not the winner
+      if (player.id !== state.winnerId) {
+        state.rebuttalTurnsTaken++;
+      }
+      
+      const rebuttalDone = state.rebuttalTurnsTaken >= state.players.length - 1;
+      if (rebuttalDone) {
+        const winner = state.players.find(p => p.id === state.winnerId);
+        const tiesAt100 = state.players.filter(p => p.score === state.target);
+        
+        if (tiesAt100.length > 1) {
+          // Winner's Roll-Off - setup mode for reordering
+          const rollOffIds = tiesAt100.map(p => p.id);
+          
+          state.phase = "winRollOff";
+          state.rollOffPlayerIds = rollOffIds;
+          state.rollOffIndex = 0;
+          state.rollOffSetupMode = true;
+          state.rollOffRoundComplete = false;
+          
+          const names = rollOffIds.map(id => state.players.find(p => p.id === id).name).join(", ");
+          addLog(`Winner's Roll-Off! Participants: ${names}. Use arrows to set order, then click "Start Roll-Off".`, "system");
+          queueToast("Winner's Roll-Off! Set the order.");
+        } else {
+          // Check for loser's roll-off
+          const minScore = Math.min(...state.players.map(p => p.score));
+          const lastPlace = state.players.filter(p => p.score === minScore);
+          
+          if (lastPlace.length > 1) {
+            // Loser's Roll-Off - setup mode for reordering
+            const rollOffIds = lastPlace.map(p => p.id);
+            
+            state.phase = "lastRollOff";
+            state.rollOffPlayerIds = rollOffIds;
+            state.rollOffIndex = 0;
+            state.rollOffSetupMode = true;
+            state.rollOffRoundComplete = false;
+            
+            const names = rollOffIds.map(p => p.name).join(", ");
+            addLog(`Loser's Roll-Off! Participants: ${names}. Use arrows to set order, then click "Start Roll-Off".`, "system");
+            queueToast("Loser's Roll-Off! Set the order.");
+          } else {
+            // Game complete - set ultimate winner and loser
+            state.ultimateWinnerId = winner.id;
+            state.loserId = lastPlace[0].id;
+            state.gameComplete = true;
+            addLog(`🏆 ${winner.name} is the Ultimate Winner! ${lastPlace[0].name} takes the shot.`, "system");
+            showGameOverBanner();
+          }
+        }
+      }
+    }
+    // Roll-off results are now checked in checkRollOffResults() after each complete round
+  }
+
+  function computeTurnScore() {
+    const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+    let score = 0, events = [];
+    if (outcomeType === "zeroPoints") return { score: 0, events };
+    if (outcomeType === "bust77") return { score: 77, events: ["bustTo77"] };
+    if (outcomeType === "tripleSnakes") {
+      const mode = qs("#tripleSnakesMode").value;
+      return mode === "3" ? { score: 3, events: ["tripleSnakesTurn"] } : { score: getLeaderScore(), events: ["tripleSnakesTieLeader"] };
+    }
+    if (outcomeType === "match") {
+      const f1 = parseInt(qs("#matchFace1").value, 10), c1 = parseInt(qs("#matchCount1").value, 10);
+      const f2 = parseInt(qs("#matchFace2").value, 10), c2 = parseInt(qs("#matchCount2").value, 10);
+      if (!isNaN(f1) && !isNaN(c1)) score += f1 * c1;
+      if (!isNaN(f2) && !isNaN(c2)) score += f2 * c2;
+      return { score: score || 0, events };
+    }
+    if (outcomeType === "doubleDouble") {
+      const p1 = parseInt(qs("#ddPair1Face").value, 10), p2 = parseInt(qs("#ddPair2Face").value, 10);
+      if (isNaN(p1) || isNaN(p2)) return { score: 0, events };
+      return { score: p1 * 2 + p2 * 2, events };
+    }
+    if (outcomeType === "fourKind") {
+      const face = parseInt(qs("#fourKindFace").value, 10);
+      if (isNaN(face)) return { score: 0, events };
+      const mode = qs("#fourKindBonus").value;
+      const normal = 4 * face, bonus = face === 1 ? 30 : (30 - face);
+      events.push("fourKind");
+      return { score: mode === "bonus" ? bonus : normal, events };
+    }
+    if (outcomeType === "straight") {
+      const res = qs("#straightResult").value;
+      if (res === "fail") return { score: 0, events: ["straightFail"] };
+      return { score: res === "success34" ? 34 : 35, events: ["straightSuccess"] };
+    }
+    return { score: 0, events };
+  }
+
+  function updateOutcomeFields() {
+    const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+    qs("#matchFields").style.display = outcomeType === "match" ? "block" : "none";
+    qs("#doubleDoubleFields").style.display = outcomeType === "doubleDouble" ? "block" : "none";
+    qs("#fourKindFields").style.display = outcomeType === "fourKind" ? "block" : "none";
+    qs("#straightFields").style.display = outcomeType === "straight" ? "block" : "none";
+    qs("#tripleSnakesFields").style.display = outcomeType === "tripleSnakes" ? "block" : "none";
+    const hints = {
+      match: "Use for two-of-a-kind and three-of-a-kind matched dice.",
+      doubleDouble: "Use when two different matching pairs are made on the final roll.",
+      fourKind: "Use when four-of-a-kind ended the turn (with or without bonus).",
+      straight: "Use only when a first-roll straight and green die were used.",
+      tripleSnakes: "Use when rolling three 1s and choosing between tying the leader or taking 3 points.",
+      zeroPoints: "Use when the turn ends with 0 points (no matches or snake eyes).",
+      bust77: "Use when the player busts and must reset directly to 77."
+    };
+    turnHint.textContent = hints[outcomeType] || "";
+  }
+
+  qs("#outcomeTypeGroup").addEventListener("change", (e) => {
+    if (e.target.name === "outcomeType") {
+      document.querySelectorAll("#outcomeTypeGroup .radio-pill").forEach(l => l.classList.remove("selected"));
+      e.target.closest(".radio-pill").classList.add("selected");
+      updateOutcomeFields();
+    }
+  });
+
+  document.querySelectorAll("#tripleSnakesToggle .match-count-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#tripleSnakesToggle .match-count-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#tripleSnakesMode").value = btn.dataset.mode;
+      qs("#tripleSnakesHelp").textContent = btn.dataset.mode === "tieLeader"
+        ? "Tie-the-leader sets this player's total score equal to the current highest score on the board."
+        : "The player can select 3 points if its a better outcome for their game.";
+    });
+  });
+
+  document.querySelectorAll("#fourKindBonusGroup .match-count-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#fourKindBonusGroup .match-count-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#fourKindBonus").value = btn.dataset.mode;
+    });
+  });
+
+  function resetToHome() {
+    state.players = []; state.target = 100; state.round = 1; state.currentIndex = 0;
+    state.started = false; state.phase = "normal"; state.winnerId = null;
+    state.ultimateWinnerId = null; state.loserId = null; state.gameComplete = false;
+    state.consecutiveZeroTurnsInRound = 0; state.turnsThisRound = 0;
+    state.lastLeaderId = null; state.roundScores = []; state.showRoundByRound = false;
+    state.rebuttalTurnsTaken = 0; state.rebuttalHit100Order = [];
+    state.rollOffPlayerIds = []; state.rollOffIndex = 0;
+    state.rollOffSetupMode = false; state.rollOffRoundComplete = false;
+    hideGameOverBanner();
+    logContainer.innerHTML = "";
+    setupCard.style.display = "block";
+    scoreCard.style.display = "none";
+    turnCard.style.display = "none";
+    logCard.style.display = "none";
+    qs("#editScoreWrapper").style.display = "none";
+    roomBanner.style.display = "none";
+    viewerBanner.style.display = "none";
+    currentRoomCode = null;
+    isViewer = false;
+    if (roomRef) { roomRef.off(); roomRef = null; }
+    window.history.replaceState({}, '', window.location.pathname);
+    renderSetupPlayers();
+  }
+
+  qs("#addPlayerBtn").onclick = () => {
+    const name = qs("#playerName").value.trim();
+    if (!name) return;
+    state.players.push({ id: 'p-' + Math.random().toString(16).slice(2) + Date.now().toString(16), name, score: 0 });
+    qs("#playerName").value = "";
+    renderSetupPlayers();
+  };
+
+  qs("#resetGameBtn").onclick = resetToHome;
+  endGameBtn.onclick = () => {
+    if (currentRoomCode && !isViewer) database.ref('rooms/' + currentRoomCode).remove();
+    resetToHome();
+  };
+
+  qs("#startGameBtn").onclick = () => {
+    if (state.players.length < 2) { alert("Add at least 2 players."); return; }
+    state.round = 1; state.currentIndex = 0; state.started = true; state.phase = "normal";
+    state.winnerId = null; state.ultimateWinnerId = null; state.loserId = null; state.gameComplete = false;
+    state.consecutiveZeroTurnsInRound = 0; state.turnsThisRound = 0;
+    state.lastLeaderId = null; state.roundScores = []; state.showRoundByRound = false;
+    state.rebuttalTurnsTaken = 0; state.rebuttalHit100Order = [];
+    state.rollOffPlayerIds = []; state.rollOffIndex = 0;
+    state.rollOffSetupMode = false; state.rollOffRoundComplete = false;
+    setupCard.style.display = "none";
+    scoreCard.style.display = "block";
+    turnCard.style.display = "block";
+    logCard.style.display = "block";
+    qs("#editScoreWrapper").style.display = "block";
+    addLog("Game started. First player begins at Round 1.", "system");
+    queueToast("Game started – Round 1.");
+    updateOutcomeFields();
+    renderScoreboard();
+    createRoom();
+  };
+
+  qs("#skipTurnBtn").onclick = () => {
+    let p;
+    if (state.phase === "winRollOff" || state.phase === "lastRollOff") {
+      const currentId = state.rollOffPlayerIds[state.rollOffIndex];
+      p = state.players.find(pl => pl.id === currentId);
+    } else {
+      p = state.players[state.currentIndex];
+    }
+    addLog(`${p.name}'s turn skipped.`, "system");
+    queueToast(`${p.name}'s turn skipped.`);
+    advanceTurn();
+  };
+
+  roundByRoundBtn.onclick = () => { state.showRoundByRound = !state.showRoundByRound; renderScoreboard(); };
+
+  // Start Roll-Off button
+  qs("#startRollOffBtn").onclick = () => {
+    state.rollOffSetupMode = false;
+    state.rollOffIndex = 0;
+    state.rollOffRoundComplete = false;
+    
+    const orderNames = state.rollOffPlayerIds.map(id => state.players.find(p => p.id === id).name).join(" → ");
+    const rollOffType = state.phase === "winRollOff" ? "Winner's" : "Loser's";
+    addLog(`${rollOffType} Roll-Off started! Order: ${orderNames}`, "system");
+    queueToast(`${rollOffType} Roll-Off started!`);
+    
+    renderScoreboard();
+    syncToFirebase();
+  };
+
+  qs("#submitTurnBtn").onclick = () => {
+    // Get current player based on phase
+    let p;
+    if (state.phase === "winRollOff" || state.phase === "lastRollOff") {
+      const currentId = state.rollOffPlayerIds[state.rollOffIndex];
+      p = state.players.find(pl => pl.id === currentId);
+    } else {
+      p = state.players[state.currentIndex];
+    }
+    
+    const outcomeType = document.querySelector('input[name="outcomeType"]:checked').value;
+    const res = computeTurnScore();
+    let turnScore = res.score;
+    const events = res.events;
+    let before = p.score, after = p.score;
+
+    if (outcomeType === "bust77") {
+      before = p.score; after = 77; p.score = 77;
+      addLog(`${p.name} selected Bust (77): score set from ${before} to 77.`, "drink");
+      queueToast(`${p.name} busts to 77. Drink!`);
+      state.consecutiveZeroTurnsInRound = 0;
+    } else if (outcomeType === "tripleSnakes") {
+      const mode = qs("#tripleSnakesMode").value;
+      before = p.score;
+      if (mode === "3") {
+        after = before + 3; p.score = after;
+        addLog(`${p.name} chose Triple Snakes for 3 points (from ${before} to ${after}).`, "social");
+        queueToast(`Triple Snakes! ${p.name} scores +3 and calls a social.`);
+      } else {
+        after = getLeaderScore(); p.score = after;
+        addLog(`${p.name} used Triple Snakes to tie the leader at ${after}.`, "social");
+        queueToast(`Triple Snakes! ${p.name} ties the leader at ${after}. Social drink!`);
+      }
+      state.consecutiveZeroTurnsInRound = 0;
+    } else {
+      if (turnScore === 0) {
+        state.consecutiveZeroTurnsInRound++;
+        addLog(`${p.name} scored 0 this turn.`, "drink");
+        queueToast(`${p.name} drinks – 0 points.`);
+      } else state.consecutiveZeroTurnsInRound = 0;
+      checkZeroRoundGroupDrink();
+      const result = applyScore(p, turnScore);
+      before = result.before; after = result.after;
+      if (result.bust) {
+        addLog(`${p.name} busted over ${state.target} and resets to 77. Drinks.`, "drink");
+        queueToast(`${p.name} busts! Reset to 77 and drink.`);
+      }
+      addLog(turnScore === 0 ? `${p.name} scored 0 (remains at ${after}).` : `${p.name} scored ${turnScore} (from ${before} to ${after}).`, "info");
+    }
+
+    if (events.includes("fourKind")) { addLog(`${p.name} rolled four-of-a-kind. Social drink.`, "social"); queueToast("Four-of-a-kind! Social drink."); }
+    if (events.includes("straightSuccess")) { addLog(`${p.name} completed the straight via green die.`, "info"); queueToast(`Straight! ${p.name} scores big.`); }
+    if (events.includes("straightFail")) { addLog(`${p.name} failed to complete the straight and scored 0.`, "drink"); queueToast(`${p.name} drinks – straight failed.`); }
+
+    // Only check leader/ties during normal play
+    if (state.phase === "normal" || state.phase === "rebuttal") {
+      handleLeaderAndTies(p);
+      evaluateWinState(p);
+    }
+    
+    state.showRoundByRound = false;
+    advanceTurn();
+  };
+
+  qs("#editScoreBtn").onclick = () => {
+    if (state.players.length === 0) return;
+    const names = state.players.map((p, idx) => `${idx + 1}: ${p.name} (${p.score})`).join("\n");
+    const which = prompt("Edit which player? Enter the number:\n\n" + names);
+    if (!which) return;
+    const idx = parseInt(which, 10) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= state.players.length) { alert("Invalid player number."); return; }
+    const player = state.players[idx];
+    const newScoreStr = prompt(`New total score for ${player.name}? (current: ${player.score})`);
+    if (newScoreStr === null || newScoreStr === "") return;
+    const newScore = parseInt(newScoreStr, 10);
+    if (isNaN(newScore) || newScore < 0) { alert("Please enter a valid non-negative number."); return; }
+    const oldScore = player.score;
+    player.score = newScore;
+    addLog(`Score edited for ${player.name}: ${oldScore} → ${newScore}.`, "system");
+    queueToast(`Score edited: ${player.name} is now at ${newScore}.`);
+    renderScoreboard();
+    syncToFirebase();
+  };
+
+  document.querySelectorAll("#matchDicePicker .die-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#matchDicePicker .die-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#matchFace1").value = btn.dataset.face;
+    });
+  });
+
+  document.querySelectorAll("#matchCountPicker .match-count-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#matchCountPicker .match-count-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#matchCount1").value = btn.dataset.count;
+    });
+  });
+
+  document.querySelectorAll("#fourKindDicePicker .die-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#fourKindDicePicker .die-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#fourKindFace").value = btn.dataset.face;
+    });
+  });
+
+  document.querySelectorAll("#ddPair1Picker .die-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#ddPair1Picker .die-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#ddPair1Face").value = btn.dataset.face;
+    });
+  });
+
+  document.querySelectorAll("#ddPair2Picker .die-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#ddPair2Picker .die-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      qs("#ddPair2Face").value = btn.dataset.face;
+    });
+  });
+
+  // Copy link button
+  qs("#copyLinkBtn").onclick = () => {
+    const url = window.location.origin + window.location.pathname + '?room=' + currentRoomCode;
+    navigator.clipboard.writeText(url).then(() => {
+      queueToast("Link copied to clipboard!");
+    }).catch(() => {
+      prompt("Copy this link:", url);
+    });
+  };
+
+  // Join room button
+  qs("#joinRoomBtn").onclick = () => {
+    const code = qs("#joinRoomCode").value.trim().toUpperCase();
+    if (code.length !== 6) { alert("Please enter a 6-character room code."); return; }
+    joinRoom(code);
+  };
+
+  // Wake Lock for viewers
+  let wakeLock = null;
+  const wakeLockBtn = qs("#wakeLockBtn");
+  const wakeLockStatus = qs("#wakeLockStatus");
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLockBtn.textContent = "🔆 Screen Staying On";
+        wakeLockBtn.style.background = "rgba(255, 209, 102, 0.2)";
+        wakeLockStatus.textContent = "Your screen will stay on while viewing.";
+        
+        wakeLock.addEventListener('release', () => {
+          wakeLockBtn.textContent = "🔅 Keep Screen On";
+          wakeLockBtn.style.background = "transparent";
+          wakeLockStatus.textContent = "";
+          wakeLock = null;
+        });
+      } else {
+        wakeLockStatus.textContent = "Screen wake lock not supported on this device.";
+      }
+    } catch (err) {
+      wakeLockStatus.textContent = "Couldn't keep screen on: " + err.message;
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release();
+      wakeLock = null;
+    }
+  }
+
+  wakeLockBtn.onclick = () => {
+    if (wakeLock) {
+      releaseWakeLock();
+    } else {
+      requestWakeLock();
+    }
+  };
+
+  // Re-acquire wake lock when page becomes visible again
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isViewer && wakeLock === null && wakeLockBtn.textContent.includes("Staying")) {
+      requestWakeLock();
+    }
+  });
+
+  // Check URL on page load
+  checkUrlForRoom();
+  
+  // Game over banner buttons
+  qs("#closeGameOverBtn").onclick = () => {
+    hideGameOverBanner();
+  };
+  
+  qs("#newGameBtn").onclick = () => {
+    hideGameOverBanner();
+    if (currentRoomCode && !isViewer) database.ref('rooms/' + currentRoomCode).remove();
+    resetToHome();
+  };
+</script>
+</body>
 </html>
