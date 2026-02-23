@@ -1,4 +1,4 @@
-import type { GameState, Player, OutcomeType, TurnOutcome, ScoreApplyResult } from '../types/gameTypes';
+import type { GameState, Player, OutcomeData, TurnOutcome, ScoreApplyResult } from '../types/gameTypes';
 
 // Generate random room code
 export function generateRoomCode(): string {
@@ -111,15 +111,11 @@ export function getCurrentPlayer(state: GameState): Player | null {
   return state.players[state.currentIndex] || null;
 }
 
-// Turn scoring
-export function computeTurnScore(
-  outcomeType: OutcomeType,
-  outcomeData: Record<string, any>,
-  state: GameState
-): TurnOutcome {
+// Turn scoring — uses typed OutcomeData discriminated union
+export function computeTurnScore(outcomeData: OutcomeData, state: GameState): TurnOutcome {
   const events: string[] = [];
 
-  switch (outcomeType) {
+  switch (outcomeData.type) {
     case 'zeroPoints':
       return { score: 0, events };
 
@@ -135,24 +131,24 @@ export function computeTurnScore(
 
     case 'match': {
       let score = 0;
-      const f1 = parseInt(outcomeData.face1, 10);
-      const c1 = parseInt(outcomeData.count1, 10);
-      const f2 = parseInt(outcomeData.face2, 10);
-      const c2 = parseInt(outcomeData.count2, 10);
+      const f1 = parseInt(outcomeData.face1 ?? '', 10);
+      const c1 = parseInt(outcomeData.count1 ?? '', 10);
+      const f2 = parseInt(outcomeData.face2 ?? '', 10);
+      const c2 = parseInt(outcomeData.count2 ?? '', 10);
       if (!isNaN(f1) && !isNaN(c1)) score += f1 * c1;
       if (!isNaN(f2) && !isNaN(c2)) score += f2 * c2;
       return { score: score || 0, events };
     }
 
     case 'doubleDouble': {
-      const p1 = parseInt(outcomeData.pair1Face, 10);
-      const p2 = parseInt(outcomeData.pair2Face, 10);
+      const p1 = parseInt(outcomeData.pair1Face ?? '', 10);
+      const p2 = parseInt(outcomeData.pair2Face ?? '', 10);
       if (isNaN(p1) || isNaN(p2)) return { score: 0, events };
       return { score: p1 * 2 + p2 * 2, events };
     }
 
     case 'fourKind': {
-      const face = parseInt(outcomeData.face, 10);
+      const face = parseInt(outcomeData.face ?? '', 10);
       if (isNaN(face)) return { score: 0, events };
       const useBonus = outcomeData.useBonus === true;
       const normal = 4 * face;
@@ -172,7 +168,7 @@ export function computeTurnScore(
   }
 }
 
-// Apply score changes
+// Apply score — pure, does not mutate player. Caller applies player.score = result.after.
 export function applyScore(
   player: Player,
   delta: number,
@@ -182,196 +178,217 @@ export function applyScore(
   let after = before + delta;
   let bust = false;
 
-  // Busts only happen in normal play, rebuttal, and loser's roll-off (not winner's roll-off)
   if (after > state.target && state.phase !== 'winRollOff') {
     bust = true;
     after = 77;
   }
 
-  player.score = after;
   return { before, after, bust };
 }
 
-// Turn advancement
-export function advanceTurn(state: GameState): void {
-  const inRollOff = state.phase === 'winRollOff' || state.phase === 'lastRollOff';
-
-  if (inRollOff && !state.rollOffSetupMode) {
-    state.rollOffIndex++;
-    if (state.rollOffIndex >= state.rollOffPlayerIds.length) {
-      state.rollOffIndex = 0;
-      state.rollOffRoundComplete = true;
-    }
-    return;
-  }
-
-  state.currentIndex++;
-  state.turnsThisRound++;
-
-  // In rebuttal, skip winner
-  if (state.phase === 'rebuttal' && state.winnerId) {
-    const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
-    if (state.currentIndex === winnerIndex) {
-      state.currentIndex++;
-    }
-  }
-
-  if (state.currentIndex >= state.players.length) {
-    snapshotRoundTotals(state);
-    state.currentIndex = 0;
-    state.round++;
-    state.turnsThisRound = 0;
-    state.consecutiveZeroTurnsInRound = 0;
-
-    // Skip winner at start of round in rebuttal
-    if (state.phase === 'rebuttal' && state.winnerId) {
-      const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
-      if (state.currentIndex === winnerIndex) {
-        state.currentIndex++;
-      }
-    }
-  }
-}
-
-// Round snapshot
-export function snapshotRoundTotals(state: GameState): void {
+// Round snapshot — returns new state
+export function snapshotRoundTotals(state: GameState): GameState {
   const scores: Record<string, number> = {};
   state.players.forEach(p => {
     scores[p.id] = p.score;
   });
-  state.roundScores = state.roundScores.filter(r => r.round !== state.round);
-  state.roundScores.push({ round: state.round, scores });
+  const newRoundScores = state.roundScores.filter(r => r.round !== state.round);
+  return { ...state, roundScores: [...newRoundScores, { round: state.round, scores }] };
+}
+
+// Turn advancement — returns new state
+export function advanceTurn(state: GameState): GameState {
+  const inRollOff = state.phase === 'winRollOff' || state.phase === 'lastRollOff';
+
+  if (inRollOff && !state.rollOffSetupMode) {
+    let rollOffIndex = state.rollOffIndex + 1;
+    let rollOffRoundComplete = false;
+    if (rollOffIndex >= state.rollOffPlayerIds.length) {
+      rollOffIndex = 0;
+      rollOffRoundComplete = true;
+    }
+    return { ...state, rollOffIndex, rollOffRoundComplete };
+  }
+
+  let currentIndex = state.currentIndex + 1;
+  let turnsThisRound = state.turnsThisRound + 1;
+
+  // In rebuttal, skip winner
+  if (state.phase === 'rebuttal' && state.winnerId) {
+    const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
+    if (currentIndex === winnerIndex) {
+      currentIndex++;
+    }
+  }
+
+  if (currentIndex >= state.players.length) {
+    const snapshotted = snapshotRoundTotals(state);
+    currentIndex = 0;
+    turnsThisRound = 0;
+
+    // Skip winner at start of round in rebuttal
+    if (state.phase === 'rebuttal' && state.winnerId) {
+      const winnerIndex = state.players.findIndex(p => p.id === state.winnerId);
+      if (currentIndex === winnerIndex) {
+        currentIndex++;
+      }
+    }
+
+    return {
+      ...snapshotted,
+      currentIndex,
+      round: state.round + 1,
+      turnsThisRound,
+      consecutiveZeroTurnsInRound: 0,
+    };
+  }
+
+  return { ...state, currentIndex, turnsThisRound };
 }
 
 export function getCompletedRoundsCount(state: GameState): number {
   return state.roundScores.length;
 }
 
-// Win state evaluation
+// Win state evaluation — returns new state + flags
 export function evaluateWinState(
   state: GameState,
   player: Player
-): { shouldShowWinnerRollOff: boolean; shouldShowLoserRollOff: boolean; gameComplete: boolean } {
-  const result = {
+): { state: GameState; shouldShowWinnerRollOff: boolean; shouldShowLoserRollOff: boolean; gameComplete: boolean } {
+  const flags = {
     shouldShowWinnerRollOff: false,
     shouldShowLoserRollOff: false,
     gameComplete: false,
   };
 
-  if (state.phase === 'normal') {
-    if (player.score === state.target && !state.winnerId) {
-      state.winnerId = player.id;
-      state.phase = 'rebuttal';
-      state.rebuttalTurnsTaken = 0;
-      state.rebuttalHit100Order = [];
+  let s = state;
+
+  if (s.phase === 'normal') {
+    if (player.score === s.target && !s.winnerId) {
+      s = { ...s, winnerId: player.id, phase: 'rebuttal', rebuttalTurnsTaken: 0, rebuttalHit100Order: [] };
     }
-  } else if (state.phase === 'rebuttal') {
-    // Track players who hit 100 during rebuttal
-    if (player.score === state.target && player.id !== state.winnerId) {
-      if (!state.rebuttalHit100Order.includes(player.id)) {
-        state.rebuttalHit100Order.push(player.id);
+  } else if (s.phase === 'rebuttal') {
+    // Track players who hit target during rebuttal
+    if (player.score === s.target && player.id !== s.winnerId) {
+      if (!s.rebuttalHit100Order.includes(player.id)) {
+        s = { ...s, rebuttalHit100Order: [...s.rebuttalHit100Order, player.id] };
       }
     }
 
     // Count this turn
-    if (player.id !== state.winnerId) {
-      state.rebuttalTurnsTaken++;
+    if (player.id !== s.winnerId) {
+      s = { ...s, rebuttalTurnsTaken: s.rebuttalTurnsTaken + 1 };
     }
 
-    const rebuttalDone = state.rebuttalTurnsTaken >= state.players.length - 1;
+    const rebuttalDone = s.rebuttalTurnsTaken >= s.players.length - 1;
     if (rebuttalDone) {
-      const winner = state.players.find(p => p.id === state.winnerId);
-      const tiesAt100 = state.players.filter(p => p.score === state.target);
+      const winner = s.players.find(p => p.id === s.winnerId);
+      const tiesAt100 = s.players.filter(p => p.score === s.target);
 
       if (tiesAt100.length > 1) {
-        // Start winner's roll-off
-        state.phase = 'winRollOff';
-        state.rollOffPlayerIds = tiesAt100.map(p => p.id);
-        state.rollOffIndex = 0;
-        state.rollOffSetupMode = true;
-        state.rollOffRoundComplete = false;
-        result.shouldShowWinnerRollOff = true;
+        s = {
+          ...s,
+          phase: 'winRollOff',
+          rollOffPlayerIds: tiesAt100.map(p => p.id),
+          rollOffIndex: 0,
+          rollOffSetupMode: true,
+          rollOffRoundComplete: false,
+        };
+        flags.shouldShowWinnerRollOff = true;
       } else {
-        // Check for loser's roll-off
-        const minScore = Math.min(...state.players.map(p => p.score));
-        const lastPlace = state.players.filter(p => p.score === minScore);
+        const minScore = Math.min(...s.players.map(p => p.score));
+        const lastPlace = s.players.filter(p => p.score === minScore);
 
         if (lastPlace.length > 1) {
-          // Start loser's roll-off
-          state.phase = 'lastRollOff';
-          state.rollOffPlayerIds = lastPlace.map(p => p.id);
-          state.rollOffIndex = 0;
-          state.rollOffSetupMode = true;
-          state.rollOffRoundComplete = false;
-          result.shouldShowLoserRollOff = true;
+          s = {
+            ...s,
+            phase: 'lastRollOff',
+            rollOffPlayerIds: lastPlace.map(p => p.id),
+            rollOffIndex: 0,
+            rollOffSetupMode: true,
+            rollOffRoundComplete: false,
+          };
+          flags.shouldShowLoserRollOff = true;
         } else {
-          // Game complete
-          state.ultimateWinnerId = winner?.id || null;
-          state.loserId = lastPlace[0]?.id || null;
-          state.gameComplete = true;
-          state.phase = 'gameComplete';
-          result.gameComplete = true;
+          s = {
+            ...s,
+            ultimateWinnerId: winner?.id || null,
+            loserId: lastPlace[0]?.id || null,
+            gameComplete: true,
+            phase: 'gameComplete',
+          };
+          flags.gameComplete = true;
         }
       }
     }
   }
 
-  return result;
+  return { state: s, ...flags };
 }
 
-// Roll-off results
-export function checkRollOffResults(state: GameState): { gameComplete: boolean } {
-  const result = { gameComplete: false };
+// Roll-off results — returns new state + flag
+export function checkRollOffResults(state: GameState): { state: GameState; gameComplete: boolean } {
+  let s = state;
 
-  if (state.phase === 'winRollOff') {
-    const maxScore = Math.max(...state.rollOffPlayerIds.map(id => state.players.find(p => p.id === id)!.score));
-    const leaders = state.rollOffPlayerIds.filter(id => state.players.find(p => p.id === id)!.score === maxScore);
+  if (s.phase === 'winRollOff') {
+    const scores = s.rollOffPlayerIds.map(id => ({
+      id,
+      score: s.players.find(p => p.id === id)!.score,
+    }));
+    const maxScore = Math.max(...scores.map(p => p.score));
+    const leaders = scores.filter(p => p.score === maxScore);
 
     if (leaders.length === 1) {
-      state.ultimateWinnerId = leaders[0];
+      s = { ...s, ultimateWinnerId: leaders[0].id };
 
-      // Check for loser's roll-off
-      const minScore = Math.min(...state.players.map(p => p.score));
-      const lastPlace = state.players.filter(p => p.score === minScore);
+      const minScore = Math.min(...s.players.map(p => p.score));
+      const lastPlace = s.players.filter(p => p.score === minScore);
 
       if (lastPlace.length > 1) {
-        state.phase = 'lastRollOff';
-        state.rollOffPlayerIds = lastPlace.map(p => p.id);
-        state.rollOffIndex = 0;
-        state.rollOffSetupMode = true;
-        state.rollOffRoundComplete = false;
+        s = {
+          ...s,
+          phase: 'lastRollOff',
+          rollOffPlayerIds: lastPlace.map(p => p.id),
+          rollOffIndex: 0,
+          rollOffSetupMode: true,
+          rollOffRoundComplete: false,
+        };
       } else {
-        state.loserId = lastPlace[0]?.id || null;
-        state.gameComplete = true;
-        state.phase = 'gameComplete';
-        result.gameComplete = true;
+        s = {
+          ...s,
+          loserId: lastPlace[0]?.id || null,
+          gameComplete: true,
+          phase: 'gameComplete',
+        };
+        return { state: s, gameComplete: true };
       }
     }
-  } else if (state.phase === 'lastRollOff') {
-    const rollOffScores = state.rollOffPlayerIds.map(id => ({
+  } else if (s.phase === 'lastRollOff') {
+    const scores = s.rollOffPlayerIds.map(id => ({
       id,
-      score: state.players.find(p => p.id === id)!.score,
+      score: s.players.find(p => p.id === id)!.score,
     }));
-
-    const maxScore = Math.max(...rollOffScores.map(p => p.score));
-    const minScore = Math.min(...rollOffScores.map(p => p.score));
+    const maxScore = Math.max(...scores.map(p => p.score));
+    const minScore = Math.min(...scores.map(p => p.score));
 
     if (maxScore !== minScore) {
-      const loser = rollOffScores.find(p => p.score === minScore)!;
-      state.loserId = loser.id;
-      state.gameComplete = true;
-      state.phase = 'gameComplete';
-      result.gameComplete = true;
+      const loser = scores.find(p => p.score === minScore)!;
+      s = { ...s, loserId: loser.id, gameComplete: true, phase: 'gameComplete' };
+      return { state: s, gameComplete: true };
     }
   }
 
-  return result;
+  return { state: s, gameComplete: false };
 }
 
-// Leader and tie handling
-export function checkLeaderAndTies(state: GameState, currentPlayer: Player): string[] {
+// Leader and tie handling — returns new state + events
+export function checkLeaderAndTies(
+  state: GameState,
+  currentPlayer: Player
+): { state: GameState; events: string[] } {
   const events: string[] = [];
   const completedRounds = getCompletedRoundsCount(state);
+  let s = state;
 
   if (state.phase === 'normal' && completedRounds >= 3) {
     const playersAtSame = state.players.filter(p => p.score === currentPlayer.score);
@@ -381,44 +398,40 @@ export function checkLeaderAndTies(state: GameState, currentPlayer: Player): str
 
     const leaderId = getLeaderId(state);
     if (leaderId && leaderId !== state.lastLeaderId) {
-      state.lastLeaderId = leaderId;
+      s = { ...s, lastLeaderId: leaderId };
       events.push('leaderChanged');
     }
   }
 
-  return events;
+  return { state: s, events };
 }
 
-// Group drink check (only applies for 4+ players)
-export function checkZeroRoundGroupDrink(state: GameState): boolean {
+// Group drink check — returns new state + flag
+export function checkZeroRoundGroupDrink(state: GameState): { state: GameState; groupDrink: boolean } {
   if (
     state.consecutiveZeroTurnsInRound >= state.players.length &&
     state.phase === 'normal' &&
     state.players.length >= 4
   ) {
-    state.consecutiveZeroTurnsInRound = 0;
-    return true;
+    return { state: { ...state, consecutiveZeroTurnsInRound: 0 }, groupDrink: true };
   }
-  return false;
+  return { state, groupDrink: false };
 }
 
-// Reorder roll-off players
-export function reorderRollOffPlayer(state: GameState, playerId: string, direction: 'up' | 'down'): void {
-  const currentIndex = state.rollOffPlayerIds.indexOf(playerId);
-  if (currentIndex === -1) return;
+// Reorder roll-off players — returns new state
+export function reorderRollOffPlayer(state: GameState, playerId: string, direction: 'up' | 'down'): GameState {
+  const currentIdx = state.rollOffPlayerIds.indexOf(playerId);
+  if (currentIdx === -1) return state;
 
-  const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-  if (newIndex < 0 || newIndex >= state.rollOffPlayerIds.length) return;
+  const newIndex = direction === 'up' ? currentIdx - 1 : currentIdx + 1;
+  if (newIndex < 0 || newIndex >= state.rollOffPlayerIds.length) return state;
 
-  // Swap
-  const temp = state.rollOffPlayerIds[currentIndex];
-  state.rollOffPlayerIds[currentIndex] = state.rollOffPlayerIds[newIndex];
-  state.rollOffPlayerIds[newIndex] = temp;
+  const newIds = [...state.rollOffPlayerIds];
+  [newIds[currentIdx], newIds[newIndex]] = [newIds[newIndex], newIds[currentIdx]];
+  return { ...state, rollOffPlayerIds: newIds };
 }
 
-// Start roll-off from setup mode
-export function startRollOff(state: GameState): void {
-  state.rollOffSetupMode = false;
-  state.rollOffIndex = 0;
-  state.rollOffRoundComplete = false;
+// Start roll-off from setup mode — returns new state
+export function startRollOff(state: GameState): GameState {
+  return { ...state, rollOffSetupMode: false, rollOffIndex: 0, rollOffRoundComplete: false };
 }

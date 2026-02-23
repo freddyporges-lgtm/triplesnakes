@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type FC, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { GameState } from '../types/gameTypes';
 import { addPlayer, removePlayer } from '../lib/gameLogic';
@@ -9,7 +9,7 @@ interface SetupProps {
   onStartGame: () => void;
 }
 
-export const Setup: React.FC<SetupProps> = ({ state, onStateChange, onStartGame }) => {
+export const Setup: FC<SetupProps> = ({ state, onStateChange, onStartGame }) => {
   const [playerName, setPlayerName] = useState('');
 
   const handleAddPlayer = () => {
@@ -48,42 +48,37 @@ export const Setup: React.FC<SetupProps> = ({ state, onStateChange, onStartGame 
 
   return (
     <motion.div
-      className="card max-w-2xl mx-auto"
+      className="card"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <div className="space-y-8">
+      <div>
         <motion.div variants={itemVariants}>
-          <h1 className="text-4xl font-bold mb-2">Triple Snakes</h1>
-          <p className="text-gray-400">Set up your game and add players</p>
+          <h2>Player Setup</h2>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-semibold text-gray-300 mb-2 block">Player Name</span>
-            <div className="flex gap-3">
+        <motion.div variants={itemVariants}>
+          <label>Player Name</label>
+          <div className="row mt-4">
+            <div className="flex-1">
               <input
                 type="text"
-                className="input-field flex-1"
                 placeholder="Enter player name..."
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddPlayer()}
               />
-              <button
-                className="btn-primary"
-                onClick={handleAddPlayer}
-              >
-                Add Player
-              </button>
             </div>
-          </label>
+            <button className="btn btn-sm" onClick={handleAddPlayer}>
+              Add
+            </button>
+          </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="space-y-3">
-          <h2 className="text-lg font-semibold">Players ({state.players.length})</h2>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+        <motion.div variants={itemVariants} className="mt-8">
+          <label>Players ({state.players.length})</label>
+          <div className="players-list mt-4">
             {state.players.map((player, index) => (
               <motion.div
                 key={player.id}
@@ -91,11 +86,11 @@ export const Setup: React.FC<SetupProps> = ({ state, onStateChange, onStartGame 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="flex items-center justify-between bg-primary p-3 rounded-lg border border-accent border-opacity-30"
+                className="player-row"
               >
-                <span className="text-white font-medium">{player.name}</span>
+                <span>{player.name}</span>
                 <button
-                  className="btn-small"
+                  className="btn btn-secondary btn-sm"
                   onClick={() => handleRemovePlayer(index)}
                 >
                   Remove
@@ -105,18 +100,17 @@ export const Setup: React.FC<SetupProps> = ({ state, onStateChange, onStartGame 
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="mt-8">
           <button
-            className={`btn-primary w-full text-lg py-4 ${
-              state.players.length < 2 ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className="btn"
+            style={{ width: '100%' }}
             onClick={handleStartGame}
             disabled={state.players.length < 2}
           >
             Start Game ({state.players.length}/2+)
           </button>
           {state.players.length < 2 && (
-            <p className="text-sm text-gray-400 mt-2 text-center">
+            <p className="muted mt-4" style={{ textAlign: 'center' }}>
               Add at least 2 players to start
             </p>
           )}
