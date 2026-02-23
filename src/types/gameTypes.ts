@@ -47,6 +47,15 @@ export type OutcomeType =
   | 'zeroPoints'
   | 'bust77';
 
+export type OutcomeData =
+  | { type: 'match'; face1?: string; count1?: string; face2?: string; count2?: string }
+  | { type: 'doubleDouble'; pair1Face?: string; pair2Face?: string }
+  | { type: 'fourKind'; face?: string; useBonus?: boolean }
+  | { type: 'straight'; result?: '34' | '35' | 'fail' | '' }
+  | { type: 'tripleSnakes'; mode?: 'tieLeader' | '3' }
+  | { type: 'zeroPoints'; zeroType?: 'snakeEyes' | 'noMatches' }
+  | { type: 'bust77' };
+
 export interface TurnOutcome {
   score: number;
   events: string[];
@@ -59,6 +68,7 @@ export interface ScoreApplyResult {
 }
 
 export interface LogEntry {
+  id: string;
   timestamp: Date;
   message: string;
   type: 'info' | 'drink' | 'social' | 'system';

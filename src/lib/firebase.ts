@@ -1,15 +1,15 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, Database, ref, set, onValue, off } from 'firebase/database';
+import { getDatabase, Database, ref, set, onValue, off, get } from 'firebase/database';
 import type { GameState } from '../types/gameTypes';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDlvZtuNjL9lSGbac92BMjQQGzQLB0niaQ',
-  authDomain: 'triple-snakes.firebaseapp.com',
-  databaseURL: 'https://triple-snakes-default-rtdb.firebaseio.com',
-  projectId: 'triple-snakes',
-  storageBucket: 'triple-snakes.firebasestorage.app',
-  messagingSenderId: '610136499280',
-  appId: '1:610136499280:web:26a385e818aa558abf5d55',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 let db: Database | null = null;
@@ -94,21 +94,16 @@ export function listenToRoom(
     }
   );
 
-  // Return unsubscribe function
   return () => off(roomRef, 'value', listener);
 }
 
+// Uses get() for a single read — no subscription leak
 export async function checkRoomExists(roomCode: string): Promise<boolean> {
-  const db = getFirebaseDB();
-  const roomRef = ref(db, `rooms/${roomCode}`);
-
-  return new Promise((resolve) => {
-    onValue(
-      roomRef,
-      (snapshot) => {
-        resolve(snapshot.exists());
-      },
-      () => resolve(false)
-    );
-  });
+  try {
+    const db = getFirebaseDB();
+    const snapshot = await get(ref(db, `rooms/${roomCode}`));
+    return snapshot.exists();
+  } catch {
+    return false;
+  }
 }

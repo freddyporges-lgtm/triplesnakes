@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { type FC, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { OutcomeType } from '../types/gameTypes';
+import type { OutcomeData } from '../types/gameTypes';
 
 interface TurnEntryProps {
-  onSubmit: (outcomeType: OutcomeType, data: Record<string, any>) => void;
+  onSubmit: (outcomeData: OutcomeData) => void;
   disabled?: boolean;
 }
 
-const outcomeTypes: { value: OutcomeType; label: string; description: string }[] = [
+const outcomeTypes: { value: OutcomeData['type']; label: string; description: string }[] = [
   { value: 'match', label: 'Match', description: 'Two-of-a-kind or three-of-a-kind' },
   { value: 'doubleDouble', label: 'Double Double', description: 'Two different matching pairs' },
   { value: 'fourKind', label: 'Four-of-a-Kind', description: 'Four matching dice' },
@@ -17,187 +17,129 @@ const outcomeTypes: { value: OutcomeType; label: string; description: string }[]
   { value: 'bust77', label: 'Bust (77)', description: 'Reset to 77' },
 ];
 
-export const TurnEntry: React.FC<TurnEntryProps> = ({ onSubmit, disabled = false }) => {
-  const [selectedOutcome, setSelectedOutcome] = useState<OutcomeType | null>(null);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+// Per-outcome form state types (no `type` field — that comes from selectedOutcome)
+type MatchForm = { face1?: string; count1?: string; face2?: string; count2?: string };
+type DoubleDoubleForm = { pair1Face?: string; pair2Face?: string };
+type FourKindForm = { face?: string; useBonus?: boolean };
+type StraightForm = { result?: '34' | '35' | 'fail' | '' };
+type TripleSnakesForm = { mode?: 'tieLeader' | '3' };
+type ZeroPointsForm = { zeroType?: 'snakeEyes' | 'noMatches' };
+type FormData = MatchForm | DoubleDoubleForm | FourKindForm | StraightForm | TripleSnakesForm | ZeroPointsForm | Record<string, never>;
 
-  const handleOutcomeSelect = (outcome: OutcomeType) => {
+export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) => {
+  const [selectedOutcome, setSelectedOutcome] = useState<OutcomeData['type'] | null>(null);
+  const [formData, setFormData] = useState<FormData>({});
+
+  const handleOutcomeSelect = (outcome: OutcomeData['type']) => {
     setSelectedOutcome(outcome);
-    // Default to snake eyes for zero points
-    if (outcome === 'zeroPoints') {
-      setFormData({ zeroType: 'snakeEyes' });
-    } else {
-      setFormData({});
-    }
+    setFormData(outcome === 'zeroPoints' ? { zeroType: 'snakeEyes' } : {});
   };
 
   const handleSubmit = () => {
-    if (selectedOutcome) {
-      onSubmit(selectedOutcome, formData);
-      setSelectedOutcome(null);
-      setFormData({});
-    }
+    if (!selectedOutcome) return;
+    const outcomeData = { type: selectedOutcome, ...formData } as OutcomeData;
+    onSubmit(outcomeData);
+    setSelectedOutcome(null);
+    setFormData({});
   };
 
   const renderOutcomeForm = () => {
     switch (selectedOutcome) {
-      case 'match':
+      case 'match': {
+        const d = formData as MatchForm;
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="number"
-                min="1"
-                max="6"
-                placeholder="Face 1"
-                className="input-field"
-                value={formData.face1 || ''}
-                onChange={(e) => setFormData({ ...formData, face1: e.target.value })}
-              />
-              <input
-                type="number"
-                min="2"
-                max="3"
-                placeholder="Count"
-                className="input-field"
-                value={formData.count1 || ''}
-                onChange={(e) => setFormData({ ...formData, count1: e.target.value })}
-              />
-              <input
-                type="number"
-                min="1"
-                max="6"
-                placeholder="Face 2 (optional)"
-                className="input-field"
-                value={formData.face2 || ''}
-                onChange={(e) => setFormData({ ...formData, face2: e.target.value })}
-              />
-              <input
-                type="number"
-                min="2"
-                max="3"
-                placeholder="Count"
-                className="input-field"
-                value={formData.count2 || ''}
-                onChange={(e) => setFormData({ ...formData, count2: e.target.value })}
-              />
-            </div>
+          <div className="cols-2">
+            <input type="number" min="1" max="6" placeholder="Face 1"
+              value={d.face1 || ''} onChange={(e) => setFormData({ ...d, face1: e.target.value })} />
+            <input type="number" min="2" max="3" placeholder="Count"
+              value={d.count1 || ''} onChange={(e) => setFormData({ ...d, count1: e.target.value })} />
+            <input type="number" min="1" max="6" placeholder="Face 2 (optional)"
+              value={d.face2 || ''} onChange={(e) => setFormData({ ...d, face2: e.target.value })} />
+            <input type="number" min="2" max="3" placeholder="Count"
+              value={d.count2 || ''} onChange={(e) => setFormData({ ...d, count2: e.target.value })} />
           </div>
         );
+      }
 
-      case 'doubleDouble':
+      case 'doubleDouble': {
+        const d = formData as DoubleDoubleForm;
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="number"
-                min="1"
-                max="6"
-                placeholder="Pair 1 Face"
-                className="input-field"
-                value={formData.pair1Face || ''}
-                onChange={(e) => setFormData({ ...formData, pair1Face: e.target.value })}
-              />
-              <input
-                type="number"
-                min="1"
-                max="6"
-                placeholder="Pair 2 Face"
-                className="input-field"
-                value={formData.pair2Face || ''}
-                onChange={(e) => setFormData({ ...formData, pair2Face: e.target.value })}
-              />
-            </div>
+          <div className="cols-2">
+            <input type="number" min="1" max="6" placeholder="Pair 1 Face"
+              value={d.pair1Face || ''} onChange={(e) => setFormData({ ...d, pair1Face: e.target.value })} />
+            <input type="number" min="1" max="6" placeholder="Pair 2 Face"
+              value={d.pair2Face || ''} onChange={(e) => setFormData({ ...d, pair2Face: e.target.value })} />
           </div>
         );
+      }
 
-      case 'fourKind':
+      case 'fourKind': {
+        const d = formData as FourKindForm;
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="number"
-                min="1"
-                max="6"
-                placeholder="Face value"
-                className="input-field"
-                value={formData.face || ''}
-                onChange={(e) => setFormData({ ...formData, face: e.target.value })}
-              />
-              <select
-                className="input-field"
-                value={formData.useBonus ? 'bonus' : 'normal'}
-                onChange={(e) => setFormData({ ...formData, useBonus: e.target.value === 'bonus' })}
-              >
-                <option value="normal">Normal (4 × Face)</option>
-                <option value="bonus">Bonus (1→30, 2→28, ...)</option>
-              </select>
-            </div>
-          </div>
-        );
-
-      case 'straight':
-        return (
-          <div className="space-y-4">
-            <select
-              className="input-field w-full"
-              value={formData.result || ''}
-              onChange={(e) => setFormData({ ...formData, result: e.target.value })}
-            >
-              <option value="">Select result...</option>
-              <option value="34">Success (34 points)</option>
-              <option value="35">Success (35 points)</option>
-              <option value="fail">Failed</option>
+          <div className="cols-2">
+            <input type="number" min="1" max="6" placeholder="Face value"
+              value={d.face || ''} onChange={(e) => setFormData({ ...d, face: e.target.value })} />
+            <select value={d.useBonus ? 'bonus' : 'normal'}
+              onChange={(e) => setFormData({ ...d, useBonus: e.target.value === 'bonus' })}>
+              <option value="normal">Normal (4 × Face)</option>
+              <option value="bonus">Bonus (1→30, 2→28, ...)</option>
             </select>
           </div>
         );
+      }
 
-      case 'tripleSnakes':
+      case 'straight': {
+        const d = formData as StraightForm;
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                className={`btn-secondary ${
-                  formData.mode === 'tieLeader' ? 'bg-highlight' : ''
-                }`}
-                onClick={() => setFormData({ ...formData, mode: 'tieLeader' })}
-              >
-                Tie Leader
-              </button>
-              <button
-                className={`btn-secondary ${formData.mode === '3' ? 'bg-highlight' : ''}`}
-                onClick={() => setFormData({ ...formData, mode: '3' })}
-              >
-                3 Points
-              </button>
-            </div>
+          <select value={d.result || ''}
+            onChange={(e) => setFormData({ ...d, result: e.target.value as StraightForm['result'] })}>
+            <option value="">Select result...</option>
+            <option value="34">Success (34 points)</option>
+            <option value="35">Success (35 points)</option>
+            <option value="fail">Failed</option>
+          </select>
+        );
+      }
+
+      case 'tripleSnakes': {
+        const d = formData as TripleSnakesForm;
+        return (
+          <div className="cols-2">
+            <button
+              className={`btn btn-secondary btn-sm${d.mode === 'tieLeader' ? ' selected' : ''}`}
+              onClick={() => setFormData({ ...d, mode: 'tieLeader' })}
+            >
+              Tie Leader
+            </button>
+            <button
+              className={`btn btn-secondary btn-sm${d.mode === '3' ? ' selected' : ''}`}
+              onClick={() => setFormData({ ...d, mode: '3' })}
+            >
+              3 Points
+            </button>
           </div>
         );
+      }
 
-      case 'zeroPoints':
+      case 'zeroPoints': {
+        const d = formData as ZeroPointsForm;
         return (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-400">What caused the zero points?</p>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                className={`btn-secondary ${
-                  formData.zeroType === 'snakeEyes' ? 'bg-highlight' : ''
-                }`}
-                onClick={() => setFormData({ ...formData, zeroType: 'snakeEyes' })}
-              >
-                🐍 Snake Eyes
-              </button>
-              <button
-                className={`btn-secondary ${
-                  formData.zeroType === 'noMatches' ? 'bg-highlight' : ''
-                }`}
-                onClick={() => setFormData({ ...formData, zeroType: 'noMatches' })}
-              >
-                ✗ No Matches
-              </button>
-            </div>
+          <div className="cols-2">
+            <button
+              className={`btn btn-secondary btn-sm${d.zeroType === 'snakeEyes' ? ' selected' : ''}`}
+              onClick={() => setFormData({ ...d, zeroType: 'snakeEyes' })}
+            >
+              🐍 Snake Eyes
+            </button>
+            <button
+              className={`btn btn-secondary btn-sm${d.zeroType === 'noMatches' ? ' selected' : ''}`}
+              onClick={() => setFormData({ ...d, zeroType: 'noMatches' })}
+            >
+              ✗ No Matches
+            </button>
           </div>
         );
+      }
 
       default:
         return null;
@@ -205,26 +147,20 @@ export const TurnEntry: React.FC<TurnEntryProps> = ({ onSubmit, disabled = false
   };
 
   return (
-    <motion.div className="card space-y-6">
-      <h2 className="text-2xl font-bold">Turn Entry</h2>
+    <div className="card">
+      <h2>Turn Entry</h2>
 
-      <div className="space-y-3">
-        <p className="text-sm font-semibold text-gray-300">Select outcome type:</p>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+      <div className="mt-8">
+        <label>Select outcome type:</label>
+        <div className="radio-row mt-4">
           {outcomeTypes.map(type => (
             <motion.button
               key={type.value}
-              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleOutcomeSelect(type.value)}
-              className={`p-3 rounded-lg border transition-all ${
-                selectedOutcome === type.value
-                  ? 'bg-highlight border-highlight'
-                  : 'bg-secondary border-accent border-opacity-30 hover:border-accent'
-              }`}
+              className={`radio-pill${selectedOutcome === type.value ? ' selected' : ''}`}
             >
-              <div className="font-semibold text-sm">{type.label}</div>
-              <div className="text-xs text-gray-400 mt-1">{type.description}</div>
+              {type.label}
             </motion.button>
           ))}
         </div>
@@ -236,24 +172,17 @@ export const TurnEntry: React.FC<TurnEntryProps> = ({ onSubmit, disabled = false
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-4"
+            className="mt-8"
           >
             {renderOutcomeForm()}
 
-            <div className="flex gap-3 pt-4">
-              <button
-                className="btn-primary flex-1"
-                onClick={handleSubmit}
-                disabled={disabled}
-              >
-                Submit
+            <div className="row mt-8">
+              <button className="btn flex-1" onClick={handleSubmit} disabled={disabled}>
+                Submit Turn
               </button>
               <button
-                className="btn-secondary flex-1"
-                onClick={() => {
-                  setSelectedOutcome(null);
-                  setFormData({});
-                }}
+                className="btn btn-secondary flex-1"
+                onClick={() => { setSelectedOutcome(null); setFormData({}); }}
               >
                 Cancel
               </button>
@@ -261,6 +190,6 @@ export const TurnEntry: React.FC<TurnEntryProps> = ({ onSubmit, disabled = false
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
