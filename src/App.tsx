@@ -5,6 +5,7 @@ import { TurnEntry } from './components/TurnEntry';
 import { GameLog } from './components/GameLog';
 import { RoomManager } from './components/RoomManager';
 import { GameCompleteOverlay } from './components/GameCompleteOverlay';
+import { Tutorial } from './components/Tutorial';
 import type { GameState, LogEntry, OutcomeData } from './types/gameTypes';
 import {
   createInitialGameState,
@@ -29,6 +30,7 @@ function App() {
   const [isViewer, setIsViewer] = useState(false);
   const [showRoomJoin, setShowRoomJoin] = useState(true);
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -208,8 +210,19 @@ function App() {
         <h1>Triple Snakes Scorekeeper</h1>
         <div className="tagline">Smart scorekeeper for the Triple Snakes dice game.</div>
 
+        {/* Tutorial */}
+        {showTutorial && (
+          <Tutorial
+            onExit={() => setShowTutorial(false)}
+            onStartGame={() => {
+              setShowTutorial(false);
+              handleCreateRoom();
+            }}
+          />
+        )}
+
         {/* Room banner (host) */}
-        {roomCode && !isViewer && (
+        {!showTutorial && roomCode && !isViewer && (
           <div className="room-banner">
             <div>Room Code:</div>
             <div className="room-code">{roomCode}</div>
@@ -224,22 +237,26 @@ function App() {
         )}
 
         {/* Viewer banner */}
-        {isViewer && (
+        {!showTutorial && isViewer && (
           <div className="viewer-banner">👁 Viewing Live Scoreboard</div>
         )}
 
         {/* Join/create flow */}
-        {!state.started && showRoomJoin && (
-          <RoomManager onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} />
+        {!showTutorial && !state.started && showRoomJoin && (
+          <RoomManager
+            onCreateRoom={handleCreateRoom}
+            onJoinRoom={handleJoinRoom}
+            onShowTutorial={() => setShowTutorial(true)}
+          />
         )}
 
         {/* Player setup */}
-        {!state.started && !showRoomJoin && (
+        {!showTutorial && !state.started && !showRoomJoin && (
           <Setup state={state} onStateChange={handleStateChange} onStartGame={handleStartGame} />
         )}
 
         {/* Active game */}
-        {state.started && (
+        {!showTutorial && state.started && (
           <>
             <div className="scoreboard">
               <Scoreboard state={state} onRollOffReorder={handleRollOffReorder} isViewer={isViewer} />

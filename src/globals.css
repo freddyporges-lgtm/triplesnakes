@@ -343,3 +343,51 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0;
 .reorder-btn:disabled {
   cursor: not-allowed; opacity: 0.3;
 }
+
+/* Tutorial */
+.tutorial-container {
+  display: flex; flex-direction: column; gap: 10px;
+  padding-bottom: 180px;
+}
+
+.tutorial-dice-row {
+  display: flex; justify-content: center; gap: 10px; padding: 14px 0;
+}
+
+.tutorial-die { width: 52px; height: 52px; }
+
+.tutorial-die-green {
+  background: #d4edda; border-color: #4caf50;
+}
+.tutorial-die-green .pip { background: #2e7d32; }
+
+.tutorial-die-highlighted {
+  box-shadow: 0 0 0 3px var(--accent), 0 0 12px rgba(29, 214, 143, 0.35);
+}
+
+.tutorial-progress {
+  height: 3px; background: #21444f; border-radius: 2px; overflow: hidden;
+}
+
+.tutorial-progress-bar {
+  height: 100%; background: var(--accent); border-radius: 2px;
+}
+
+.coach-overlay {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(4, 16, 20, 0.95) 20%);
+  z-index: 100;
+}
+
+.coach-bubble {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--card); border: 1px solid var(--accent); border-radius: 14px;
+  padding: 12px 14px; box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+}
+
+.coach-icon { font-size: 1.5rem; flex-shrink: 0; }
+
+.coach-text { font-size: 0.88rem; line-height: 1.45; color: var(--text); }
+
+.coach-continue { width: 100%; margin-top: 8px; }
