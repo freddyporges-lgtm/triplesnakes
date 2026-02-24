@@ -3,9 +3,10 @@ import { type FC, useState } from 'react';
 interface RoomManagerProps {
   onCreateRoom: () => void;
   onJoinRoom: (code: string) => void;
+  onShowTutorial?: () => void;
 }
 
-export const RoomManager: FC<RoomManagerProps> = ({ onCreateRoom, onJoinRoom }) => {
+export const RoomManager: FC<RoomManagerProps> = ({ onCreateRoom, onJoinRoom, onShowTutorial }) => {
   const [joinInput, setJoinInput] = useState('');
 
   return (
@@ -39,6 +40,18 @@ export const RoomManager: FC<RoomManagerProps> = ({ onCreateRoom, onJoinRoom }) 
           </button>
         </div>
       </div>
+
+      {onShowTutorial && (
+        <div className="join-section" style={{ textAlign: 'center' }}>
+          <button
+            className="btn btn-secondary"
+            style={{ width: '100%' }}
+            onClick={onShowTutorial}
+          >
+            How to Play
+          </button>
+        </div>
+      )}
     </div>
   );
 };
