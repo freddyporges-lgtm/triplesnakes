@@ -283,7 +283,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0;
 .event-toast.show { display: block; }
 
 .event-toast-inner {
-  width: 100%; height: 100%; background-color: #000; background-image: url("Triple Snakes-B5.png");
+  width: 100%; height: 100%; background-color: #000; background-image: url("/Triple Snakes-B5.png");
   background-repeat: repeat; background-size: 80px 80px; display: flex; align-items: center;
   justify-content: center; padding: 12px; box-sizing: border-box;
 }

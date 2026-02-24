@@ -203,7 +203,7 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <img src="Triple Snakes-B3.png" alt="Triple Snakes header logo" className="logo-top" />
+        <img src="/Triple Snakes-B3.png" alt="Triple Snakes header logo" className="logo-top" />
       </header>
 
       <main className="app">
@@ -298,7 +298,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <img src="Triple Snakes-B5.png" alt="Triple Snakes footer logo" className="logo-bottom" />
+        <img src="/Triple Snakes-B5.png" alt="Triple Snakes footer logo" className="logo-bottom" />
       </footer>
     </div>
   );
