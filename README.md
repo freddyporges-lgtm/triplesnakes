@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# Triple Snakes Scorekeeper
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A real-time, multiplayer digital scorekeeper for [Triple Snakes](https://www.kickstarter.com/projects/2070044443/triple-snakes) — a dice-rolling game I created with friends in NYC and brought to life through Kickstarter.
 
-Currently, two official plugins are available:
+## Background
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Triple Snakes is a physical dice game I designed and launched on [Kickstarter in January 2021](https://www.kickstarter.com/projects/2070044443/triple-snakes), raising over $8,000 from 63 backers against a $1,000 goal. The game was born out of late nights with friends in Hamilton Heights, NYC — inspired by Yahtzee but evolved through years of playtesting into its own thing. I handled everything end-to-end: game design, Kickstarter campaign, trademark filing, fulfillment (shipped 1,250+ game sets myself via USPS), eCommerce via Shopify, and marketing through Google and Meta ads.
 
-## React Compiler
+This web app is the latest chapter — a digital scorekeeper I built as a side project to make it easier for people to track games without pen and paper. It's a passion project that reflects how I like to spend my free time: picking up tools and building things.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## The Game
 
-## Expanding the ESLint configuration
+Players roll 4 dice, racing to score exactly **100 points**. Key mechanics:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Match scoring** — pairs, triples, and quads score face value multiplied by count
+- **Triple Snakes** (three 1s) — the signature move: choose to take 3 points *or* leapfrog to tie the leader's score
+- **Snake Eyes** (two 1s) — score zero for the round
+- **Bust** — go over 100 and you drop back to 77
+- **Rebuttal** — when someone hits 100, everyone else gets one last shot to tie
+- **Roll-offs** — tied players settle it head-to-head
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+The physical game set includes custom dice (designed to look like ice cubes) in a carrying pouch. Full rules at [gamerules.com/triple-snakes](https://gamerules.com/triple-snakes/).
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## What This App Does
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Turn-by-turn score entry with all 7 outcome types (match, double-double, four-of-a-kind, straight, triple snakes, snake eyes, zero)
+- Full game phase management: normal play, rebuttal, winner's roll-off, loser's roll-off
+- Real-time multiplayer via Firebase — one host runs the game, others join as viewers with a room code
+- Interactive tutorial that walks new players through a full sample game
+- Game log with color-coded events
+- Mobile-first responsive design
+
+## Tech Stack
+
+- **React 19** + **TypeScript** — UI and type safety
+- **Vite** — build tooling
+- **Firebase Realtime Database** — multiplayer state sync
+- **Framer Motion** — animations
+- **Tailwind CSS** — styling
+- **Netlify** — hosting
+
+## Running Locally
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## About Me
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+I'm a product manager by trade. Building things is my hobby — whether it's a physical dice game, a web app, or whatever else catches my interest. Triple Snakes started as a game I played with friends and turned into a Kickstarter, a small business, and now a software project. This repo is a reflection of that: a side project built for fun, not profit.
