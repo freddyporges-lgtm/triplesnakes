@@ -4,9 +4,9 @@ A real-time, multiplayer digital scorekeeper for [Triple Snakes](https://www.kic
 
 ## Background
 
-Triple Snakes is a physical dice game I designed and launched on [Kickstarter in January 2021](https://www.kickstarter.com/projects/2070044443/triple-snakes), raising over $8,000 from 63 backers against a $1,000 goal. The game was born out of late nights with friends in Hamilton Heights, NYC — inspired by Yahtzee but evolved through years of playtesting into its own thing. I handled everything end-to-end: game design, Kickstarter campaign, trademark filing, fulfillment (shipped 1,250+ game sets myself via USPS), eCommerce via Shopify, and marketing through Google and Meta ads.
+Triple Snakes is a physical dice game I designed and launched on [Kickstarter in January 2021](https://www.kickstarter.com/projects/2070044443/triple-snakes), raising over $8,000 from 63 backers against a $1,000 goal. The game was born out of late nights with friends in NYC — inspired by Yahtzee but evolved through years of playtesting into its own thing. I handled everything end-to-end: game design, Kickstarter campaign, trademark filing, fulfillment (shipped game sets myself via USPS), eCommerce via Shopify, and marketing through Google and Meta ads.
 
-This web app is the latest chapter — a digital scorekeeper I built as a side project to make it easier for people to track games without pen and paper. It's a passion project that reflects how I like to spend my free time: picking up tools and building things.
+This web app is the latest chapter — a digital scorekeeper I built as a side project to make it easier for people to track games without pen and paper. 
 
 ## The Game
 
