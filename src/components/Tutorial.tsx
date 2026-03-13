@@ -119,7 +119,7 @@ export const Tutorial: React.FC<TutorialProps> = ({ onExit, onStartGame }) => {
     }
   };
 
-  const handleChoice = (option: (typeof step.choiceOptions)[0]) => {
+  const handleChoice = (option: NonNullable<typeof step.choiceOptions>[0]) => {
     const isAbsoluteSet = option.value === 'tie';
     if (isAbsoluteSet) {
       applyScore(step, option.scoreChange);
