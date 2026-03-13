@@ -18,6 +18,73 @@ const outcomeTypes: { value: OutcomeData['type']; label: string; description: st
   { value: 'bust77', label: 'Bust (77)', description: 'Reset to 77' },
 ];
 
+function OutcomeExplainer({ type }: { type: OutcomeData['type'] }) {
+  const content: Record<OutcomeData['type'], { heading: string; lines: string[] }> = {
+    match: {
+      heading: 'Score = face value × count',
+      lines: [
+        'Two 5s = 10 pts, Three 4s = 12 pts',
+        'Can score a second match in the same roll',
+      ],
+    },
+    doubleDouble: {
+      heading: 'Two different pairs in one roll',
+      lines: [
+        'Score = (pair 1 × 2) + (pair 2 × 2)',
+        'E.g. two 3s + two 5s = 6 + 10 = 16 pts',
+      ],
+    },
+    fourKind: {
+      heading: 'Four matching dice in one roll',
+      lines: [
+        'Normal: 4 × face value (e.g. four 5s = 20)',
+        'Bonus: 30 − face value (e.g. four 5s = 25)',
+        'Bonus for 1s: always 30 pts',
+        'Everyone else drinks!',
+      ],
+    },
+    straight: {
+      heading: 'All different faces on the first roll',
+      lines: [
+        'Must include the green die',
+        '34 or 35 pts depending on the combination',
+        'Failed straight = 0 pts, drink up',
+      ],
+    },
+    tripleSnakes: {
+      heading: 'Three 1s (snake eyes) rolled',
+      lines: [
+        '3 pts: take the safe points',
+        'Tie Leader: jump to the leader\'s score',
+      ],
+    },
+    zeroPoints: {
+      heading: 'No matching dice this roll',
+      lines: [
+        'Snake Eyes: rolled a 1 — drink!',
+        'No Matches: just no points, no drink',
+      ],
+    },
+    bust77: {
+      heading: 'Score went over 100 — reset to 77',
+      lines: [
+        'Any roll that pushes you past the target',
+        'Drink and get sent back to 77',
+      ],
+    },
+  };
+
+  const c = content[type];
+  return (
+    <div className="outcome-explainer">
+      <div className="outcome-explainer-heading">{c.heading}</div>
+      {c.lines.map((line, i) => (
+        <div key={i} className="outcome-explainer-line">{line}</div>
+      ))}
+    </div>
+  );
+}
+
 function DicePicker({ value, onChange, startFace = 2 }: { value?: string; onChange: (face: string) => void; startFace?: number }) {
   const faces = Array.from({ length: 7 - startFace }, (_, i) => i + startFace);
   return (
@@ -114,6 +181,9 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
       case 'fourKind': {
         const d = formData as FourKindForm;
         const useBonus = d.useBonus !== false; // default to true
+        const face = parseInt(d.face ?? '', 10);
+        const normalPts = !isNaN(face) ? `${4 * face} pts` : '?';
+        const bonusPts = !isNaN(face) ? `${face === 1 ? 30 : 30 - face} pts` : '?';
         return (
           <div>
             <DicePicker value={d.face} onChange={(f) => setFormData({ ...d, face: f })} startFace={1} />
@@ -123,14 +193,14 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
                 className={`btn btn-secondary btn-sm${!useBonus ? ' selected' : ''}`}
                 onClick={() => setFormData({ ...d, useBonus: false })}
               >
-                Normal (4 × face)
+                Normal ({normalPts})
               </button>
               <button
                 type="button"
                 className={`btn btn-secondary btn-sm${useBonus ? ' selected' : ''}`}
                 onClick={() => setFormData({ ...d, useBonus: true })}
               >
-                Bonus
+                Bonus ({bonusPts})
               </button>
             </div>
           </div>
@@ -223,6 +293,7 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
             exit={{ opacity: 0, height: 0 }}
             className="mt-8"
           >
+            <OutcomeExplainer type={selectedOutcome} />
             {renderOutcomeForm()}
 
             <div className="row mt-8">
