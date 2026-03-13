@@ -17,7 +17,7 @@ const PIP_POSITIONS: Record<number, number[]> = {
   6: [1, 3, 4, 6, 7, 9],
 };
 
-function Die({ face, highlighted, isGreen }: { face: number; highlighted?: boolean; isGreen?: boolean }) {
+export function Die({ face, highlighted, isGreen }: { face: number; highlighted?: boolean; isGreen?: boolean }) {
   const positions = PIP_POSITIONS[face] || [];
   return (
     <div
