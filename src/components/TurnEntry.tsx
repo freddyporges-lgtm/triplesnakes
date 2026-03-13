@@ -1,6 +1,7 @@
 import { type FC, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { OutcomeData } from '../types/gameTypes';
+import { Die } from './DiceDisplay';
 
 interface TurnEntryProps {
   onSubmit: (outcomeData: OutcomeData) => void;
@@ -17,6 +18,45 @@ const outcomeTypes: { value: OutcomeData['type']; label: string; description: st
   { value: 'bust77', label: 'Bust (77)', description: 'Reset to 77' },
 ];
 
+function DicePicker({ value, onChange, startFace = 2 }: { value?: string; onChange: (face: string) => void; startFace?: number }) {
+  const faces = Array.from({ length: 7 - startFace }, (_, i) => i + startFace);
+  return (
+    <div className="dice-picker">
+      {faces.map(f => (
+        <button
+          key={f}
+          type="button"
+          className={`die-btn${value === String(f) ? ' selected' : ''}`}
+          onClick={() => onChange(String(f))}
+        >
+          <Die face={f} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CountPicker({ value, onChange }: { value?: string; onChange: (count: string) => void }) {
+  return (
+    <div className="match-count-picker">
+      <button
+        type="button"
+        className={`btn btn-secondary btn-sm${value === '2' ? ' selected' : ''}`}
+        onClick={() => onChange('2')}
+      >
+        ×2
+      </button>
+      <button
+        type="button"
+        className={`btn btn-secondary btn-sm${value === '3' ? ' selected' : ''}`}
+        onClick={() => onChange('3')}
+      >
+        ×3
+      </button>
+    </div>
+  );
+}
+
 // Per-outcome form state types (no `type` field — that comes from selectedOutcome)
 type MatchForm = { face1?: string; count1?: string; face2?: string; count2?: string };
 type DoubleDoubleForm = { pair1Face?: string; pair2Face?: string };
@@ -32,7 +72,11 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
 
   const handleOutcomeSelect = (outcome: OutcomeData['type']) => {
     setSelectedOutcome(outcome);
-    setFormData(outcome === 'zeroPoints' ? { zeroType: 'snakeEyes' } : {});
+    setFormData(
+      outcome === 'zeroPoints' ? { zeroType: 'snakeEyes' } :
+      outcome === 'fourKind' ? { useBonus: true } :
+      {}
+    );
   };
 
   const handleSubmit = () => {
@@ -48,15 +92,9 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
       case 'match': {
         const d = formData as MatchForm;
         return (
-          <div className="cols-2">
-            <input type="number" min="1" max="6" placeholder="Face 1"
-              value={d.face1 || ''} onChange={(e) => setFormData({ ...d, face1: e.target.value })} />
-            <input type="number" min="2" max="3" placeholder="Count"
-              value={d.count1 || ''} onChange={(e) => setFormData({ ...d, count1: e.target.value })} />
-            <input type="number" min="1" max="6" placeholder="Face 2 (optional)"
-              value={d.face2 || ''} onChange={(e) => setFormData({ ...d, face2: e.target.value })} />
-            <input type="number" min="2" max="3" placeholder="Count"
-              value={d.count2 || ''} onChange={(e) => setFormData({ ...d, count2: e.target.value })} />
+          <div>
+            <DicePicker value={d.face1} onChange={(f) => setFormData({ ...d, face1: f })} startFace={2} />
+            <CountPicker value={d.count1} onChange={(c) => setFormData({ ...d, count1: c })} />
           </div>
         );
       }
@@ -64,26 +102,37 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
       case 'doubleDouble': {
         const d = formData as DoubleDoubleForm;
         return (
-          <div className="cols-2">
-            <input type="number" min="1" max="6" placeholder="Pair 1 Face"
-              value={d.pair1Face || ''} onChange={(e) => setFormData({ ...d, pair1Face: e.target.value })} />
-            <input type="number" min="1" max="6" placeholder="Pair 2 Face"
-              value={d.pair2Face || ''} onChange={(e) => setFormData({ ...d, pair2Face: e.target.value })} />
+          <div>
+            <label className="mt-4" style={{ fontSize: 12, color: '#888' }}>Pair 1</label>
+            <DicePicker value={d.pair1Face} onChange={(f) => setFormData({ ...d, pair1Face: f })} startFace={2} />
+            <label className="mt-8" style={{ fontSize: 12, color: '#888' }}>Pair 2</label>
+            <DicePicker value={d.pair2Face} onChange={(f) => setFormData({ ...d, pair2Face: f })} startFace={2} />
           </div>
         );
       }
 
       case 'fourKind': {
         const d = formData as FourKindForm;
+        const useBonus = d.useBonus !== false; // default to true
         return (
-          <div className="cols-2">
-            <input type="number" min="1" max="6" placeholder="Face value"
-              value={d.face || ''} onChange={(e) => setFormData({ ...d, face: e.target.value })} />
-            <select value={d.useBonus ? 'bonus' : 'normal'}
-              onChange={(e) => setFormData({ ...d, useBonus: e.target.value === 'bonus' })}>
-              <option value="normal">Normal (4 × Face)</option>
-              <option value="bonus">Bonus (1→30, 2→28, ...)</option>
-            </select>
+          <div>
+            <DicePicker value={d.face} onChange={(f) => setFormData({ ...d, face: f })} startFace={1} />
+            <div className="match-count-picker" style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className={`btn btn-secondary btn-sm${!useBonus ? ' selected' : ''}`}
+                onClick={() => setFormData({ ...d, useBonus: false })}
+              >
+                Normal (4 × face)
+              </button>
+              <button
+                type="button"
+                className={`btn btn-secondary btn-sm${useBonus ? ' selected' : ''}`}
+                onClick={() => setFormData({ ...d, useBonus: true })}
+              >
+                Bonus
+              </button>
+            </div>
           </div>
         );
       }
