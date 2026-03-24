@@ -251,13 +251,13 @@ function App() {
           />
         )}
 
-        {/* Player setup */}
-        {!showTutorial && !state.started && !showRoomJoin && (
+        {/* Player setup (host only) */}
+        {!showTutorial && !state.started && !showRoomJoin && !isViewer && (
           <Setup state={state} onStateChange={handleStateChange} onStartGame={handleStartGame} />
         )}
 
-        {/* Active game */}
-        {!showTutorial && state.started && (
+        {/* Active game (also show for viewers waiting for game to start) */}
+        {!showTutorial && (state.started || isViewer) && (
           <>
             <div className="scoreboard">
               <Scoreboard state={state} onRollOffReorder={handleRollOffReorder} isViewer={isViewer} />
