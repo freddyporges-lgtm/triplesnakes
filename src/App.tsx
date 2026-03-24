@@ -69,6 +69,7 @@ function App() {
     setShowRoomJoin(false);
     addLog(`Room created: ${code}`, 'system');
     window.history.replaceState({}, '', `?room=${code}`);
+    syncStateToFirebase(code, state);
   };
 
   const handleJoinRoom = async (code: string) => {
