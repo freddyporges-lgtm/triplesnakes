@@ -127,9 +127,13 @@ export function computeTurnScore(outcomeData: OutcomeData, state: GameState): Tu
 
     case 'tripleSnakes': {
       const mode = outcomeData.mode;
-      return mode === '3'
-        ? { score: 3, events: ['tripleSnakesTurn'] }
-        : { score: getLeaderScore(state), events: ['tripleSnakesTieLeader'] };
+      if (mode === '3') {
+        return { score: 3, events: ['tripleSnakesTurn'] };
+      }
+      const currentPlayer = state.players[state.currentIndex];
+      const leaderScore = getLeaderScore(state);
+      const delta = leaderScore - (currentPlayer?.score ?? 0);
+      return { score: delta, events: ['tripleSnakesTieLeader'] };
     }
 
     case 'match': {
