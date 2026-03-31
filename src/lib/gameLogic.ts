@@ -122,6 +122,9 @@ export function computeTurnScore(outcomeData: OutcomeData, state: GameState): Tu
     case 'bust77':
       return { score: 77, events: ['bustTo77'] };
 
+    case 'manualScore':
+      return { score: outcomeData.score, events: [] };
+
     case 'tripleSnakes': {
       const mode = outcomeData.mode;
       return mode === '3'

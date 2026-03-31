@@ -45,7 +45,8 @@ export type OutcomeType =
   | 'straight'
   | 'tripleSnakes'
   | 'zeroPoints'
-  | 'bust77';
+  | 'bust77'
+  | 'manualScore';
 
 export type OutcomeData =
   | { type: 'match'; face1?: string; count1?: string; face2?: string; count2?: string }
@@ -54,7 +55,8 @@ export type OutcomeData =
   | { type: 'straight'; result?: '34' | '35' | 'fail' | '' }
   | { type: 'tripleSnakes'; mode?: 'tieLeader' | '3' }
   | { type: 'zeroPoints'; zeroType?: 'snakeEyes' | 'noMatches' }
-  | { type: 'bust77' };
+  | { type: 'bust77' }
+  | { type: 'manualScore'; score: number };
 
 export interface TurnOutcome {
   score: number;
