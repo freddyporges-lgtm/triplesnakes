@@ -136,6 +136,8 @@ type FormData = MatchForm | DoubleDoubleForm | FourKindForm | StraightForm | Tri
 export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) => {
   const [selectedOutcome, setSelectedOutcome] = useState<OutcomeData['type'] | null>(null);
   const [formData, setFormData] = useState<FormData>({});
+  const [kyleMode, setKyleMode] = useState(false);
+  const [manualScore, setManualScore] = useState('');
 
   const handleOutcomeSelect = (outcome: OutcomeData['type']) => {
     setSelectedOutcome(outcome);
@@ -152,6 +154,13 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
     onSubmit(outcomeData);
     setSelectedOutcome(null);
     setFormData({});
+  };
+
+  const handleManualSubmit = () => {
+    const score = parseInt(manualScore, 10);
+    if (isNaN(score)) return;
+    onSubmit({ type: 'manualScore', score });
+    setManualScore('');
   };
 
   const renderOutcomeForm = () => {
@@ -267,49 +276,81 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
 
   return (
     <div className="card">
-      <h2>Turn Entry</h2>
-
-      <div className="mt-8">
-        <label>Select outcome type:</label>
-        <div className="radio-row mt-4">
-          {outcomeTypes.map(type => (
-            <motion.button
-              key={type.value}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleOutcomeSelect(type.value)}
-              className={`radio-pill${selectedOutcome === type.value ? ' selected' : ''}`}
-            >
-              {type.label}
-            </motion.button>
-          ))}
-        </div>
+      <div className="turn-entry-header">
+        <h2>Turn Entry</h2>
+        <button
+          className={`btn btn-sm kyle-mode-toggle${kyleMode ? ' active' : ''}`}
+          onClick={() => { setKyleMode(!kyleMode); setSelectedOutcome(null); setFormData({}); setManualScore(''); }}
+        >
+          {kyleMode ? 'Kyle Dowd Mode: ON' : 'Kyle Dowd Mode'}
+        </button>
       </div>
 
-      <AnimatePresence>
-        {selectedOutcome && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-8"
-          >
-            <OutcomeExplainer type={selectedOutcome} />
-            {renderOutcomeForm()}
-
-            <div className="row mt-8">
-              <button className="btn flex-1" onClick={handleSubmit} disabled={disabled}>
-                Submit Turn
-              </button>
-              <button
-                className="btn btn-secondary flex-1"
-                onClick={() => { setSelectedOutcome(null); setFormData({}); }}
-              >
-                Cancel
-              </button>
+      {kyleMode ? (
+        <div className="mt-8">
+          <label>Enter score directly:</label>
+          <div className="kyle-mode-input mt-4">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={manualScore}
+              onChange={(e) => setManualScore(e.target.value)}
+              placeholder="Points scored this turn"
+              className="manual-score-input"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleManualSubmit(); }}
+            />
+          </div>
+          <div className="row mt-8">
+            <button className="btn flex-1" onClick={handleManualSubmit} disabled={disabled || manualScore === ''}>
+              Submit Turn
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mt-8">
+            <label>Select outcome type:</label>
+            <div className="radio-row mt-4">
+              {outcomeTypes.map(type => (
+                <motion.button
+                  key={type.value}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleOutcomeSelect(type.value)}
+                  className={`radio-pill${selectedOutcome === type.value ? ' selected' : ''}`}
+                >
+                  {type.label}
+                </motion.button>
+              ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+          <AnimatePresence>
+            {selectedOutcome && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-8"
+              >
+                <OutcomeExplainer type={selectedOutcome} />
+                {renderOutcomeForm()}
+
+                <div className="row mt-8">
+                  <button className="btn flex-1" onClick={handleSubmit} disabled={disabled}>
+                    Submit Turn
+                  </button>
+                  <button
+                    className="btn btn-secondary flex-1"
+                    onClick={() => { setSelectedOutcome(null); setFormData({}); }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </div>
   );
 };
