@@ -1,10 +1,12 @@
-import { type FC, useState } from 'react';
+import { type FC, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { OutcomeData } from '../types/gameTypes';
+import type { GameState, OutcomeData } from '../types/gameTypes';
+import { computeTurnScore, applyScore, getCurrentPlayer } from '../lib/gameLogic';
 import { Die } from './DiceDisplay';
 
 interface TurnEntryProps {
   onSubmit: (outcomeData: OutcomeData) => void;
+  gameState: GameState;
   disabled?: boolean;
 }
 
@@ -133,8 +135,8 @@ type TripleSnakesForm = { mode?: 'tieLeader' | '3' };
 type ZeroPointsForm = { zeroType?: 'snakeEyes' | 'noMatches' };
 type FormData = MatchForm | DoubleDoubleForm | FourKindForm | StraightForm | TripleSnakesForm | ZeroPointsForm | Record<string, never>;
 
-export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) => {
-  const [selectedOutcome, setSelectedOutcome] = useState<OutcomeData['type'] | null>(null);
+export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = false }) => {
+  const [selectedOutcome, setSelectedOutcome] = useState<OutcomeData['type'] | null>('match');
   const [formData, setFormData] = useState<FormData>({});
   const [kyleMode, setKyleMode] = useState(false);
   const [manualScore, setManualScore] = useState('');
@@ -148,11 +150,22 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
     );
   };
 
+  const scorePreview = useMemo(() => {
+    if (!selectedOutcome) return null;
+    const outcomeData = { type: selectedOutcome, ...formData } as OutcomeData;
+    const player = getCurrentPlayer(gameState);
+    if (!player) return null;
+    const outcome = computeTurnScore(outcomeData, gameState);
+    if (outcomeData.type === 'bust77') return { delta: 0, after: 77, bust: true };
+    const result = applyScore(player, outcome.score, gameState);
+    return { delta: outcome.score, after: result.after, bust: result.bust };
+  }, [selectedOutcome, formData, gameState]);
+
   const handleSubmit = () => {
     if (!selectedOutcome) return;
     const outcomeData = { type: selectedOutcome, ...formData } as OutcomeData;
     onSubmit(outcomeData);
-    setSelectedOutcome(null);
+    setSelectedOutcome('match');
     setFormData({});
   };
 
@@ -169,7 +182,7 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
         const d = formData as MatchForm;
         return (
           <div>
-            <DicePicker value={d.face1} onChange={(f) => setFormData({ ...d, face1: f })} startFace={2} />
+            <DicePicker value={d.face1} onChange={(f) => setFormData({ ...d, face1: f, count1: d.count1 || '2' })} startFace={2} />
             <CountPicker value={d.count1} onChange={(c) => setFormData({ ...d, count1: c })} />
           </div>
         );
@@ -324,6 +337,17 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, disabled = false }) =>
             </div>
           </div>
 
+            <div className="row mt-8">
+              <button className="btn flex-1" onClick={handleSubmit} disabled={disabled}>
+                {scorePreview && scorePreview.delta > 0
+                  ? `Submit +${scorePreview.delta} pts`
+                  : scorePreview?.bust
+                    ? 'Submit BUST → 77'
+                    : 'Submit Turn'}
+              </button>
+              <button
+                className="btn btn-secondary flex-1"
+                onClick={() => { setSelectedOutcome('match'); setFormData({}); }}
           <AnimatePresence>
             {selectedOutcome && (
               <motion.div
