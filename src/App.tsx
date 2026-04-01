@@ -31,6 +31,7 @@ function App() {
   const [showRoomJoin, setShowRoomJoin] = useState(true);
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [undoSnapshot, setUndoSnapshot] = useState<{ state: GameState; logs: LogEntry[] } | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -99,6 +100,9 @@ function App() {
   };
 
   const handleTurnSubmit = (outcomeData: OutcomeData) => {
+    // Save snapshot for undo
+    setUndoSnapshot({ state, logs: [...logs] });
+
     // Deep-clone players so mutations never touch the previous state snapshot
     let s: GameState = { ...state, players: state.players.map(p => ({ ...p })) };
     const currentPlayer = s.players[s.currentIndex];
@@ -170,6 +174,14 @@ function App() {
     if (roomCode && !isViewer) syncStateToFirebase(roomCode, s);
   };
 
+  const handleUndo = () => {
+    if (!undoSnapshot) return;
+    setState(undoSnapshot.state);
+    setLogs(undoSnapshot.logs);
+    setUndoSnapshot(null);
+    if (roomCode && !isViewer) syncStateToFirebase(roomCode, undoSnapshot.state);
+  };
+
   const handleStateChange = (newState: GameState) => {
     setState(newState);
     if (roomCode && !isViewer) syncStateToFirebase(roomCode, newState);
@@ -191,9 +203,38 @@ function App() {
     const newState = createNewGameWithPlayers(state);
     setState(newState);
     setLogs([]);
+    setUndoSnapshot(null);
     addLog('New game started with same players!', 'system');
     if (roomCode && !isViewer) syncStateToFirebase(roomCode, newState);
   };
+
+  // Screen Wake Lock — keep screen on during active game
+  useEffect(() => {
+    if (!state.started) return;
+    let wakeLock: WakeLockSentinel | null = null;
+    let released = false;
+
+    const acquire = async () => {
+      try {
+        if (!released && 'wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch { /* silently ignore — user navigated away or API unavailable */ }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') acquire();
+    };
+
+    acquire();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      wakeLock?.release();
+    };
+  }, [state.started]);
 
   useEffect(() => {
     return () => {
@@ -263,6 +304,14 @@ function App() {
               <Scoreboard state={state} onRollOffReorder={handleRollOffReorder} isViewer={isViewer} />
             </div>
 
+            {!isViewer && !state.gameComplete && undoSnapshot && (
+              <div style={{ textAlign: 'center', marginTop: 8 }}>
+                <button className="btn btn-secondary btn-sm" onClick={handleUndo}>
+                  Undo Last Turn
+                </button>
+              </div>
+            )}
+
             {!isViewer && !state.gameComplete && (
               <>
                 {state.rollOffSetupMode && (state.phase === 'winRollOff' || state.phase === 'lastRollOff') ? (
@@ -275,7 +324,7 @@ function App() {
                     </button>
                   </div>
                 ) : (
-                  <TurnEntry onSubmit={handleTurnSubmit} disabled={isViewer} />
+                  <TurnEntry onSubmit={handleTurnSubmit} gameState={state} disabled={isViewer} />
                 )}
               </>
             )}
