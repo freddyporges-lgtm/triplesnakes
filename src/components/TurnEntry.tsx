@@ -74,6 +74,10 @@ function OutcomeExplainer({ type }: { type: OutcomeData['type'] }) {
         'Drink and get sent back to 77',
       ],
     },
+    manualScore: {
+      heading: 'Manual score entry',
+      lines: ['Enter the exact points scored this turn'],
+    },
   };
 
   const c = content[type];
@@ -337,17 +341,6 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = 
             </div>
           </div>
 
-            <div className="row mt-8">
-              <button className="btn flex-1" onClick={handleSubmit} disabled={disabled}>
-                {scorePreview && scorePreview.delta > 0
-                  ? `Submit +${scorePreview.delta} pts`
-                  : scorePreview?.bust
-                    ? 'Submit BUST → 77'
-                    : 'Submit Turn'}
-              </button>
-              <button
-                className="btn btn-secondary flex-1"
-                onClick={() => { setSelectedOutcome('match'); setFormData({}); }}
           <AnimatePresence>
             {selectedOutcome && (
               <motion.div
@@ -361,7 +354,11 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = 
 
                 <div className="row mt-8">
                   <button className="btn flex-1" onClick={handleSubmit} disabled={disabled}>
-                    Submit Turn
+                    {scorePreview && scorePreview.delta > 0
+                      ? `Submit +${scorePreview.delta} pts`
+                      : scorePreview?.bust
+                        ? 'Submit BUST → 77'
+                        : 'Submit Turn'}
                   </button>
                   <button
                     className="btn btn-secondary flex-1"
