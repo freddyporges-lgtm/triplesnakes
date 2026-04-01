@@ -1,5 +1,5 @@
-import { type FC } from 'react';
-import { motion } from 'framer-motion';
+import { type FC, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { GameState } from '../types/gameTypes';
 import { getLeaderId, getCurrentPlayer } from '../lib/gameLogic';
 
@@ -10,6 +10,7 @@ interface ScoreboardProps {
 }
 
 export const Scoreboard: FC<ScoreboardProps> = ({ state, onRollOffReorder, isViewer = false }) => {
+  const [showRoundScores, setShowRoundScores] = useState(false);
   const leaderId = getLeaderId(state);
   const currentPlayer = getCurrentPlayer(state);
   const inRollOff = state.phase === 'winRollOff' || state.phase === 'lastRollOff';
@@ -26,8 +27,7 @@ export const Scoreboard: FC<ScoreboardProps> = ({ state, onRollOffReorder, isVie
     return playersToShow;
   };
 
-  const phaseText = {
-    normal: 'Normal Play',
+  const phaseText: Record<string, string> = {
     rebuttal: `Rebuttal (${(state.players.length - 1) - state.rebuttalTurnsTaken} left)`,
     winRollOff: state.rollOffSetupMode ? "Winner's Roll-Off (Set Order)" : "Winner's Roll-Off",
     lastRollOff: state.rollOffSetupMode ? "Loser's Roll-Off (Set Order)" : "Loser's Roll-Off",
@@ -58,11 +58,59 @@ export const Scoreboard: FC<ScoreboardProps> = ({ state, onRollOffReorder, isVie
   return (
     <motion.div className="space-y-6" initial="hidden" animate="visible" variants={containerVariants}>
       {/* Phase and Round Info */}
-      <motion.div variants={itemVariants} className="flex gap-4 justify-center">
-        <div className="badge-success text-center px-4 py-2">Round: {roundText}</div>
-        <div className="badge text-center px-4 py-2">{phaseText[state.phase]}</div>
-        <div className="badge-warning text-center px-4 py-2">Target: {state.target}</div>
+      <motion.div variants={itemVariants} className="flex gap-3 justify-center flex-wrap">
+        <div className="badge-success text-center px-4 py-2">{roundText}</div>
+        {phaseText[state.phase] && (
+          <div className="badge text-center px-4 py-2">{phaseText[state.phase]}</div>
+        )}
+        {state.roundScores.length > 0 && (
+          <button
+            onClick={() => setShowRoundScores(!showRoundScores)}
+            className={`badge text-center px-4 py-2 cursor-pointer border-none ${showRoundScores ? 'badge-warning' : ''}`}
+            style={{ cursor: 'pointer' }}
+          >
+            {showRoundScores ? 'Hide Rounds' : 'Round Scores'}
+          </button>
+        )}
       </motion.div>
+
+      {/* Round-by-Round Scores */}
+      <AnimatePresence>
+        {showRoundScores && state.roundScores.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="round-table-wrapper">
+              <table className="round-table">
+                <thead>
+                  <tr>
+                    <th>Round</th>
+                    {state.players.map(p => (
+                      <th key={p.id}>{p.name}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.roundScores
+                    .slice()
+                    .sort((a, b) => a.round - b.round)
+                    .map((rs) => (
+                      <tr key={rs.round}>
+                        <td>{rs.round}</td>
+                        {state.players.map(p => (
+                          <td key={p.id}>{rs.scores[p.id] ?? '-'}</td>
+                        ))}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Current Player */}
       {currentPlayer && (
