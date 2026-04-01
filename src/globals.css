@@ -410,3 +410,23 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0;
 .coach-text { font-size: 0.88rem; line-height: 1.45; color: var(--text); }
 
 .coach-continue { width: 100%; margin-top: 8px; }
+
+/* Kyle Dowd Score Entry Mode */
+.turn-entry-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.turn-entry-header h2 { margin: 0; }
+
+.kyle-mode-toggle {
+  font-size: 0.7rem; padding: 4px 10px; border-radius: 20px;
+  background: transparent; border: 1px solid var(--muted); color: var(--muted);
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.kyle-mode-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.kyle-mode-toggle.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+
+.manual-score-input {
+  width: 100%; padding: 12px; font-size: 1.2rem; text-align: center;
+  background: var(--bg); color: var(--text); border: 2px solid var(--muted);
+  border-radius: 10px; outline: none; transition: border-color 0.2s;
+}
+.manual-score-input:focus { border-color: var(--accent); }
+.manual-score-input::placeholder { color: var(--muted); font-size: 0.9rem; }
