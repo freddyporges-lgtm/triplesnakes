@@ -224,7 +224,7 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = 
         const d = formData as MatchForm;
         return (
           <div>
-            <DicePicker value={d.face1} onChange={(f) => setFormData({ ...d, face1: f, count1: d.count1 || '2' })} startFace={2} />
+            <DicePicker value={d.face1} onChange={(f) => setFormData({ ...d, face1: f })} startFace={2} />
             <CountPicker value={d.count1} onChange={(c) => setFormData({ ...d, count1: c })} />
           </div>
         );
