@@ -21,7 +21,7 @@ import {
   startRollOff,
   generateRoomCode,
 } from './lib/gameLogic';
-import { initializeFirebase, syncStateToFirebase, listenToRoom, checkRoomExists } from './lib/firebase';
+import { initializeFirebase, syncStateToFirebase, syncLogsToFirebase, listenToRoom, checkRoomExists } from './lib/firebase';
 
 function App() {
   const [state, setState] = useState<GameState>(createInitialGameState());
@@ -84,8 +84,9 @@ function App() {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
       }
-      unsubscribeRef.current = listenToRoom(code, (updates) => {
+      unsubscribeRef.current = listenToRoom(code, (updates, remoteLogs) => {
         setState(prev => ({ ...prev, ...updates }));
+        if (remoteLogs) setLogs(remoteLogs);
       });
     } else {
       alert('Room not found. Please check the code.');
@@ -207,6 +208,13 @@ function App() {
     addLog('New game started with same players!', 'system');
     if (roomCode && !isViewer) syncStateToFirebase(roomCode, newState);
   };
+
+  // Sync logs to Firebase for live viewers
+  useEffect(() => {
+    if (roomCode && !isViewer && logs.length > 0) {
+      syncLogsToFirebase(roomCode, logs);
+    }
+  }, [logs, roomCode, isViewer]);
 
   // Screen Wake Lock — keep screen on during active game
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { type FC, useState, useMemo } from 'react';
+import { type FC, useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { GameState, OutcomeData } from '../types/gameTypes';
 import { computeTurnScore, applyScore, getCurrentPlayer } from '../lib/gameLogic';
@@ -142,17 +142,54 @@ type FormData = MatchForm | DoubleDoubleForm | FourKindForm | StraightForm | Tri
 export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = false }) => {
   const [selectedOutcome, setSelectedOutcome] = useState<OutcomeData['type'] | null>('match');
   const [formData, setFormData] = useState<FormData>({});
-  const [kyleMode, setKyleMode] = useState(false);
+  const [outcomeMode, setOutcomeMode] = useState(false);
   const [manualScore, setManualScore] = useState('');
 
-  const handleOutcomeSelect = (outcome: OutcomeData['type']) => {
-    setSelectedOutcome(outcome);
-    setFormData(
-      outcome === 'zeroPoints' ? { zeroType: 'snakeEyes' } :
-      outcome === 'fourKind' ? { useBonus: true } :
-      {}
-    );
+  const autoSubmitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isFormComplete = (outcome: OutcomeData['type'] | null, data: FormData): boolean => {
+    if (!outcome) return false;
+    switch (outcome) {
+      case 'bust77': return true;
+      case 'match': { const d = data as MatchForm; return !!(d.face1 && d.count1); }
+      case 'doubleDouble': { const d = data as DoubleDoubleForm; return !!(d.pair1Face && d.pair2Face); }
+      case 'fourKind': { const d = data as FourKindForm; return !!d.face; }
+      case 'straight': { const d = data as StraightForm; return !!d.result; }
+      case 'tripleSnakes': { const d = data as TripleSnakesForm; return !!d.mode; }
+      case 'zeroPoints': { const d = data as ZeroPointsForm; return !!d.zeroType; }
+      default: return false;
+    }
   };
+
+  const handleOutcomeSelect = (outcome: OutcomeData['type']) => {
+    if (autoSubmitTimer.current) clearTimeout(autoSubmitTimer.current);
+    setSelectedOutcome(outcome);
+    const initialData =
+      outcome === 'fourKind' ? { useBonus: true } :
+      {};
+    setFormData(initialData);
+
+    // Auto-submit immediately for bust77 (no form needed)
+    if (outcome === 'bust77') {
+      onSubmit({ type: 'bust77' } as OutcomeData);
+      setSelectedOutcome('match');
+      setFormData({});
+    }
+  };
+
+  // Auto-submit when form becomes complete
+  useEffect(() => {
+    if (autoSubmitTimer.current) clearTimeout(autoSubmitTimer.current);
+    if (selectedOutcome && selectedOutcome !== 'bust77' && isFormComplete(selectedOutcome, formData)) {
+      autoSubmitTimer.current = setTimeout(() => {
+        const outcomeData = { type: selectedOutcome, ...formData } as OutcomeData;
+        onSubmit(outcomeData);
+        setSelectedOutcome('match');
+        setFormData({});
+      }, 400);
+    }
+    return () => { if (autoSubmitTimer.current) clearTimeout(autoSubmitTimer.current); };
+  }, [selectedOutcome, formData]);
 
   const scorePreview = useMemo(() => {
     if (!selectedOutcome) return null;
@@ -166,6 +203,7 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = 
   }, [selectedOutcome, formData, gameState]);
 
   const handleSubmit = () => {
+    if (autoSubmitTimer.current) clearTimeout(autoSubmitTimer.current);
     if (!selectedOutcome) return;
     const outcomeData = { type: selectedOutcome, ...formData } as OutcomeData;
     onSubmit(outcomeData);
@@ -296,34 +334,14 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = 
       <div className="turn-entry-header">
         <h2>Turn Entry</h2>
         <button
-          className={`btn btn-sm kyle-mode-toggle${kyleMode ? ' active' : ''}`}
-          onClick={() => { setKyleMode(!kyleMode); setSelectedOutcome(null); setFormData({}); setManualScore(''); }}
+          className={`btn btn-sm kyle-mode-toggle${outcomeMode ? ' active' : ''}`}
+          onClick={() => { setOutcomeMode(!outcomeMode); setSelectedOutcome(null); setFormData({}); setManualScore(''); }}
         >
-          {kyleMode ? 'Kyle Dowd Mode: ON' : 'Kyle Dowd Mode'}
+          {outcomeMode ? 'Outcome Scoring: ON' : 'Outcome Scoring'}
         </button>
       </div>
 
-      {kyleMode ? (
-        <div className="mt-8">
-          <label>Enter score directly:</label>
-          <div className="kyle-mode-input mt-4">
-            <input
-              type="number"
-              inputMode="numeric"
-              value={manualScore}
-              onChange={(e) => setManualScore(e.target.value)}
-              placeholder="Points scored this turn"
-              className="manual-score-input"
-              onKeyDown={(e) => { if (e.key === 'Enter') handleManualSubmit(); }}
-            />
-          </div>
-          <div className="row mt-8">
-            <button className="btn flex-1" onClick={handleManualSubmit} disabled={disabled || manualScore === ''}>
-              Submit Turn
-            </button>
-          </div>
-        </div>
-      ) : (
+      {outcomeMode ? (
         <>
           <div className="mt-8">
             <label>Select outcome type:</label>
@@ -371,6 +389,26 @@ export const TurnEntry: FC<TurnEntryProps> = ({ onSubmit, gameState, disabled = 
             )}
           </AnimatePresence>
         </>
+      ) : (
+        <div className="mt-8">
+          <label>Enter score:</label>
+          <div className="kyle-mode-input mt-4">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={manualScore}
+              onChange={(e) => setManualScore(e.target.value)}
+              placeholder="Points scored this turn"
+              className="manual-score-input"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleManualSubmit(); }}
+            />
+          </div>
+          <div className="row mt-8">
+            <button className="btn flex-1" onClick={handleManualSubmit} disabled={disabled || manualScore === ''}>
+              Submit Turn
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
