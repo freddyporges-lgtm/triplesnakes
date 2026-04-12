@@ -107,13 +107,8 @@ export const Setup: FC<SetupProps> = ({ state, onStateChange, onStartGame }) => 
             onClick={handleStartGame}
             disabled={state.players.length < 2}
           >
-            Start Game ({state.players.length}/2+)
+            Start Game
           </button>
-          {state.players.length < 2 && (
-            <p className="muted mt-4" style={{ textAlign: 'center' }}>
-              Add at least 2 players to start
-            </p>
-          )}
         </motion.div>
       </div>
     </motion.div>

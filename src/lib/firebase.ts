@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, Database, ref, set, onValue, off, get } from 'firebase/database';
-import type { GameState } from '../types/gameTypes';
+import type { GameState, LogEntry } from '../types/gameTypes';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -34,6 +34,7 @@ export async function syncStateToFirebase(roomCode: string, state: GameState): P
   const roomRef = ref(db, `rooms/${roomCode}`);
 
   const dataToSync = {
+    started: state.started,
     players: state.players,
     target: state.target,
     round: state.round,
@@ -50,15 +51,29 @@ export async function syncStateToFirebase(roomCode: string, state: GameState): P
     rollOffIndex: state.rollOffIndex,
     rollOffSetupMode: state.rollOffSetupMode,
     rollOffRoundComplete: state.rollOffRoundComplete,
+    previousWinnerId: state.previousWinnerId,
+    previousLoserId: state.previousLoserId,
     lastUpdate: Date.now(),
   };
 
   await set(roomRef, dataToSync);
 }
 
+export async function syncLogsToFirebase(roomCode: string, logs: LogEntry[]): Promise<void> {
+  const db = getFirebaseDB();
+  const logsRef = ref(db, `rooms/${roomCode}/logs`);
+  const serialized = logs.map(l => ({
+    id: l.id,
+    timestamp: l.timestamp instanceof Date ? l.timestamp.toISOString() : l.timestamp,
+    message: l.message,
+    type: l.type,
+  }));
+  await set(logsRef, serialized);
+}
+
 export function listenToRoom(
   roomCode: string,
-  onUpdate: (state: Partial<GameState>) => void,
+  onUpdate: (state: Partial<GameState>, logs?: LogEntry[]) => void,
   onError?: (error: Error) => void
 ): () => void {
   const db = getFirebaseDB();
@@ -69,7 +84,19 @@ export function listenToRoom(
     (snapshot) => {
       const data = snapshot.val();
       if (data) {
+        const logs: LogEntry[] | undefined = data.logs
+          ? (Array.isArray(data.logs) ? data.logs : Object.values(data.logs)).map(
+              (l: { id: string; timestamp: string; message: string; type: LogEntry['type'] }) => ({
+                id: l.id,
+                timestamp: new Date(l.timestamp),
+                message: l.message,
+                type: l.type,
+              })
+            )
+          : undefined;
+
         onUpdate({
+          started: data.started || false,
           players: data.players || [],
           target: data.target || 100,
           round: data.round || 1,
@@ -86,7 +113,9 @@ export function listenToRoom(
           rollOffIndex: data.rollOffIndex || 0,
           rollOffSetupMode: data.rollOffSetupMode || false,
           rollOffRoundComplete: data.rollOffRoundComplete || false,
-        });
+          previousWinnerId: data.previousWinnerId || null,
+          previousLoserId: data.previousLoserId || null,
+        }, logs);
       }
     },
     (error) => {
